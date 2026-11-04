@@ -7,7 +7,7 @@ dihapus otomatis; berkas perantara dibuat di folder sementara lalu dibuang.
 Pemakaian:
   python logbook_cepat.py --nama "Nama Lengkap" --start 2026-11-02 --end 2026-11-30 \
       --ttd ttd.png --ics ekspor.zip [--ics lain.ics] [--gcal-json gcal_events.json] \
-      [--pakai "Kerja"] [--libur 2026-11-12=Nama] [--cuti 2026-11-05] [--out DIR]
+      [--hapus-juga shot1.png shot2.png] [--pakai "Kerja"] [--libur 2026-11-12=Nama] [--cuti 2026-11-05] [--out DIR]
 
 Keluaran: baris 'BERKAS: <path>' lalu teks laporan ringkas untuk disampaikan apa adanya.
 """
@@ -132,6 +132,7 @@ def main():
     ap.add_argument("--email", nargs="*", default=[])
     ap.add_argument("--libur", nargs="*", default=[], help="YYYY-MM-DD atau YYYY-MM-DD=Nama")
     ap.add_argument("--cuti", nargs="*", default=[], help="tanggal cuti pribadi YYYY-MM-DD")
+    ap.add_argument("--hapus-juga", nargs="*", default=[], help="berkas lain yang dihapus setelah selesai (mis. screenshot)")
     ap.add_argument("--out", default=".")
     ap.add_argument("--simpan-ttd", action="store_true")
     a = ap.parse_args()
@@ -154,7 +155,7 @@ def main():
         ev = json.loads(ev_p.read_text(encoding="utf-8"))
         ag_p.write_text(json.dumps(susun_agenda(ev, a.nama, pasangan(a.libur), a.cuti), ensure_ascii=False), encoding="utf-8")
         bcmd = [HERE / "build.py", "--start", a.start, "--end", a.end, "--agenda", ag_p, "--ttd", a.ttd,
-                "--events", ev_p, "--out", a.out, "--hapus", *a.ics, *a.gcal_json]
+                "--events", ev_p, "--out", a.out, "--hapus", *a.ics, *a.gcal_json, *a.hapus_juga]
         if a.simpan_ttd:
             bcmd.append("--simpan-ttd")
         rep = json.loads(run(bcmd))

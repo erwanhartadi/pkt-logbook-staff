@@ -257,6 +257,35 @@ def test_screenshot():
         check(not jp.exists(), "screenshot: json sementara tidak dihapus")
 
 
+def test_cepat_screenshot():
+    """Mode hemat dari hasil transkripsi screenshot/gcal: laporan memuat cakupan, ragu, libur; screenshot terhapus."""
+    from PIL import Image
+    data = {"pemilik": "", "events": [
+        {"kalender": "Screenshot", "judul": "Rapat tim", "mulai": "2026-11-03T09:00:00+07:00", "selesai": "2026-11-03T10:00:00+07:00"},
+        {"kalender": "Screenshot", "judul": "Diskusi (judul terpotong)", "mulai": "2026-11-17T14:00:00+07:00",
+         "selesai": "2026-11-17T15:00:00+07:00", "ragu": "judul terpotong"},
+        {"kalender": "Holidays in Indonesia", "judul": "Hari Contoh Libur", "mulai": "2026-11-12", "selesai": "2026-11-13"}],
+        "tercakup": [["2026-11-02", "2026-11-08"], ["2026-11-09", "2026-11-15"], ["2026-11-16", "2026-11-20"]]}
+    with tempfile.TemporaryDirectory() as t:
+        t = Path(t)
+        jp, ttd, shot = t / "gcal_events.json", t / "ttd.png", t / "minggu1.png"
+        jp.write_text(json.dumps(data), encoding="utf-8")
+        Image.new("RGB", (60, 40), "white").save(ttd)
+        Image.new("RGB", (60, 40), "gray").save(shot)
+        r = subprocess.run([sys.executable, "-I", str(HERE / "logbook_cepat.py"), "--nama", "Staf Contoh",
+                            "--start", "2026-11-02", "--end", "2026-11-20", "--ttd", str(ttd), "--gcal-json", str(jp),
+                            "--hapus-juga", str(shot), "--out", str(t / "out")], capture_output=True, text=True)
+        check(r.returncode == 0, f"cepat-ss: gagal jalan\n{r.stdout}\n{r.stderr}")
+        first, _, laporan = r.stdout.partition("\n")
+        check(first.startswith("BERKAS: ") and Path(first[8:]).is_file(), "cepat-ss: xlsx tidak dibuat")
+        check(not (jp.exists() or ttd.exists() or shot.exists()), "cepat-ss: berkas sensitif tidak dihapus")
+        check("Hari Contoh Libur" in laporan, "cepat-ss: libur tidak dilaporkan")
+        check("judul terpotong" in laporan, "cepat-ss: penanda ragu tidak dilaporkan")
+        check("Belum tercakup" not in laporan, "cepat-ss: cakupan lengkap dilaporkan tidak lengkap")
+        ws = load_workbook(Path(first[8:])).worksheets[0]
+        check(ws["C" + str(6 + 10)].fill.fgColor.rgb == "FFFF0000", "cepat-ss: libur 12 Nov tidak merah")
+
+
 def test_cepat():
     """Mode hemat: satu perintah dari zip -> xlsx + laporan ringkas; TTD dan zip terhapus."""
     from PIL import Image
@@ -379,6 +408,7 @@ def main():
     test_gcal()
     test_screenshot()
     test_cepat()
+    test_cepat_screenshot()
     print("OK")
 
 

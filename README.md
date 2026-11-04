@@ -6,20 +6,19 @@ Skill Claude untuk menyusun **logbook harian staf PKT UGM** (.xlsx) dari file ka
 - Tidak ada data pribadi di repo ini. Jangan pernah meng-commit file `.ics`, tanda tangan, atau logbook terisi (sudah dicegah `.gitignore`).
 
 ## Cara pakai (ringkas)
-1. Ekspor kalender Anda ([panduan](docs/PANDUAN-STAF.md)). Lampirkan sebagai **zip** (jangan `.ics` hasil ekstrak, karena bisa melebihi batas chat). Disarankan dipotong dulu per rentang tanggal dengan [Pemotong Kalender](dist/pemotong-kalender.html).
-2. Buka **chat baru biasa** di akun Claude pribadi Anda. **Jangan Incognito**: chat Incognito tidak bisa membuat file, jadi logbook tidak akan jadi.
-3. Ketik dan lampirkan TTD (gambar) serta zip kalender:
+1. Buka **chat baru biasa** di akun Claude pribadi Anda (**bukan Incognito**: Incognito tidak bisa membuat file).
+2. Ketik dan lampirkan TTD (gambar tanda tangan):
 
-   `/logbook-pkt-staff Nama Lengkap Anda; 1 November 2026 - 30 November 2026`
-4. Periksa laporan singkat, unduh file, lalu **hapus chat**.
+   `/logbook-pkt-staff "Nama Lengkap Anda" "2 November 2026 - 30 November 2026"`
+3. Sumber agenda, pilih satu:
+   - **Opsi 1**: lampirkan 4-6 screenshot Google Calendar tampilan Week.
+   - **Opsi 2**: tambahkan `akses kalender saya` (Google Calendar pribadi yang tersambung).
+4. Periksa laporan singkat, unduh file, lalu **hapus chat**. Detail: [panduan staf](docs/PANDUAN-STAF.md).
 
-Opsi tambahan di perintah (semua opsional): `kalender: Nama Kalender`, `libur: 2026-11-12`, `cuti: 2026-11-05`, `rapikan`, `akses kalender saya`.
+Opsi tambahan (boleh): `libur: 2026-11-12`, `cuti: 2026-11-05`, `kalender: Nama`, `rapikan`. Cadangan: zip ekspor Google Calendar (jangan diekstrak), opsional dipotong dengan [Pemotong Kalender](dist/pemotong-kalender.html).
 
 ## Mode hemat (bawaan)
-Dirancang agar murah di kuota (termasuk akun Free): satu perintah skrip membaca kalender, memakai judul agenda apa adanya, mengisi template, menghapus TTD dan kalender, lalu menampilkan laporan ringkas (maksimal 8 baris per daftar). Claude tidak menulis ulang tiap agenda dan tidak bertanya panjang.
-- Hemat: zip atau zip dari Pemotong Kalender. Kalender *Birthdays* dan agenda berstatus ditolak/free/bukan kegiatan kerja otomatis tidak dimasukkan; semuanya tetap dilaporkan.
-- `rapikan`: Claude menulis ulang agenda ke bahasa logbook (lebih boros).
-- Screenshot dan connector kalender lebih boros dibanding zip.
+Satu perintah skrip membaca agenda, memakai judul apa adanya, mengisi template, menghapus TTD/screenshot/data kalender, dan menampilkan laporan ringkas (maks. 8 baris per daftar). Claude tidak menulis ulang tiap agenda dan tidak bertanya panjang. Agenda ditolak/free/bukan kerja, judul kembar, dan kalender Birthdays tidak dimasukkan, tetapi dilaporkan. `rapikan` = Claude menulis ulang agenda (lebih boros).
 
 ## Pemasangan
 
@@ -47,7 +46,7 @@ cp -r pkt-logbook-staff/plugins/logbook-pkt-staff/skills/logbook-pkt-staff ~/.cl
 
 ## Catatan akun Free (hemat kuota)
 - Satu chat baru untuk satu logbook. Jangan melanjutkan chat lama yang sudah panjang.
-- Paling murah: zip dari Pemotong Kalender. Hindari `.ics` mentah, screenshot banyak, dan `rapikan` bila kuota mepet.
+- Paling murah: opsi 2 (akses kalender). Screenshot sedikit lebih boros; hindari `rapikan` dan `.ics` mentah bila kuota mepet.
 - Hindari revisi bolak-balik. Edit manual di Excel lebih murah (TTD sudah dihapus setelah file jadi).
 - Libur nasional dibaca dari kalender *Holidays in Indonesia* bila ikut terekspor; bila tidak, tulis `libur: 2026-11-12` di perintah.
 - Kuota habis di tengah jalan: ulangi perintah yang sama setelah kuota pulih, atau pecah per dua minggu.
@@ -56,7 +55,7 @@ cp -r pkt-logbook-staff/plugins/logbook-pkt-staff/skills/logbook-pkt-staff ~/.cl
 Python 3 dengan `openpyxl`, `pillow`, dan `python-dateutil` (biasanya sudah tersedia di lingkungan code execution Claude; jika belum, skill akan memasangnya lewat `pip`).
 
 ## Screenshot kalender mingguan
-Alternatif tanpa ekspor dan tanpa connector: 4-6 screenshot tampilan Week (seluruh jam terlihat). Skill menyalinnya ke format yang sama dan menandai butir yang kurang jelas. Lihat [panduan](docs/PANDUAN-STAF.md).
+Alternatif tanpa ekspor dan tanpa connector: 4-6 screenshot tampilan Week (seluruh jam terlihat). Skill menyalinnya dan menandai butir yang kurang jelas. Lihat [panduan](docs/PANDUAN-STAF.md).
 
 ## Pemotong Kalender
 `dist/pemotong-kalender.html` adalah satu halaman web yang berjalan sepenuhnya di browser (tanpa unggah, tanpa internet). Ia memotong ekspor kalender menjadi zip kecil berisi agenda pada rentang tanggal yang dipilih, tanpa deskripsi, lokasi, atau peserta lain. Unduh berkasnya (**Download raw file**) lalu buka dengan klik dua kali. Perlu browser yang mendukung `DecompressionStream` (Chrome/Edge/Safari terbaru, Firefox 113+).

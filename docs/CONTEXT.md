@@ -66,5 +66,10 @@ Varian skill `logbook-pkt` yang bisa dipakai staf lain di PKT (Center for Tropic
 ## Mode hemat (4 Nov 2026, permintaan: seringan mungkin untuk akun Free)
 - Rekomendasi utama final: jalankan di **akun pribadi, chat biasa (bukan Incognito)**; hapus chat sesudahnya; opsional matikan "Generate memory from chats". Incognito tidak bisa membuat file, jadi tidak bisa dipakai. SKILL.md langkah 0 membuat skill berhenti dengan dua kalimat bila tidak bisa menjalankan kode/membuat file, dan tidak boleh menulis logbook sebagai teks.
 - `scripts/logbook_cepat.py`: satu perintah dari zip/.ics/`gcal_events.json` ke xlsx + laporan ringkas. Judul agenda dipakai apa adanya; otomatis dibuang dan dilaporkan: kalender Birthdays/Ulang tahun (`--abaikan`), agenda "free", diduga bukan kerja, judul kembar di hari yang sama. Libur dari kalender libur dan cuti berjudul "cuti bersama/libur" otomatis merah; cuti lain kuning. Laporan dibatasi (maks 8 butir per daftar). Berkas sensitif dihapus oleh `build.py --hapus`.
-- Jalur tambahan dipindah ke `references/` (`gcal.md`, `screenshot.md`, `rapi.md`) agar SKILL.md pendek dan hanya dibaca bila perlu (hemat token). Mode `rapikan` = alur lama (Claude menulis ulang tiap agenda).
+- Jalur `rapikan` ada di `references/rapi.md` (dibaca hanya bila diminta). Mode `rapikan` = alur lama (Claude menulis ulang tiap agenda).
 - Keterbatasan: belum diuji di claude.ai sungguhan pada chat biasa (hanya selftest fiktif). Mode hemat menerima kandidat libur/cuti dari kalender apa adanya; staf diminta memeriksa baris Merah/Kuning di laporan.
+
+## Penyederhanaan final (4 Nov 2026)
+- Format perintah final: `/logbook-pkt-staff "Nama Lengkap" "rentang tanggal"` + TTD + **opsi 1 screenshot** atau **opsi 2 "akses kalender saya"** (Google Calendar). Zip/.ics tetap didukung sebagai cadangan tak diiklankan.
+- SKILL.md memuat kedua jalur secara inline (tanpa file referensi tambahan); `references/rapi.md` hanya untuk `rapikan`. Keduanya bermuara ke `gcal_events.json` -> `logbook_cepat.py --gcal-json ... --hapus-juga <screenshot>`.
+- Risiko: Claude harus membedakan TTD dari screenshot (staf diminta menamai file `ttd`); transkripsi screenshot memakai token gambar (opsi 2 lebih murah).
