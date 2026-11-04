@@ -1,0 +1,11 @@
+{
+  "name": "pkt-logbook",
+  "owner": { "name": "PKT Logbook Maintainer" },
+  "plugins": [
+    {
+      "name": "logbook-pkt-staff",
+      "source": "./plugins/logbook-pkt-staff",
+      "description": "Susun logbook harian staf PKT UGM (.xlsx) dari file kalender ICS, dengan laporan agenda masuk/tidak masuk."
+    }
+  ]
+}

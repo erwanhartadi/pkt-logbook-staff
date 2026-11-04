@@ -1,0 +1,11 @@
+# Jangan pernah commit data pribadi
+*.ics
+ttd*
+tanda*tangan*
+agenda*.json
+events*.json
+*.xlsx
+!**/templates/kosong.xlsx
+__pycache__/
+*.pyc
+.DS_Store

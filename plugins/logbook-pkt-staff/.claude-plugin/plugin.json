@@ -1,0 +1,5 @@
+{
+  "name": "logbook-pkt-staff",
+  "version": "1.0.0",
+  "description": "Susun logbook harian staf PKT UGM (.xlsx) dari file kalender ICS. TTD dan ICS dipakai sekali lalu dihapus."
+}
