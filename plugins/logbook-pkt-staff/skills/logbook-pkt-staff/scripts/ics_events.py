@@ -34,6 +34,7 @@ WIN_TZ = {
     "Pacific Standard Time": "America/Los_Angeles",
     "UTC": "UTC",
 }
+COVER = []  # rentang tanggal yang tercakup screenshot (opsional)
 HARI = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
 NON_KERJA = re.compile(
     r"\b(lunch|makan siang|istirahat|break|reminder|pengingat|focus time|blok fokus|"
@@ -245,6 +246,11 @@ def read_gcal_json(path, warns):
     dengan bentuk events yang sama seperti hasil read_ics."""
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     email = str(raw.get("pemilik", "")).lower().strip()
+    for r in raw.get("tercakup", []):
+        try:
+            COVER.append((date.fromisoformat(r[0]), date.fromisoformat(r[1])))
+        except Exception:
+            warns.add("gcal: format 'tercakup' tidak valid (harus [[\"YYYY-MM-DD\", \"YYYY-MM-DD\"], ...])")
     kunci = email or "pemilik"
     per_kal = {}
     for i, e in enumerate(raw.get("events", [])):
@@ -258,7 +264,7 @@ def read_gcal_json(path, warns):
         respon = str(e.get("respon", "")).lower()
         ev = {"summary": str(e.get("judul", "")).strip(), "uid": f"g{i}", "dtstart": s, "dtend": en,
               "status": {"cancelled": "CANCELLED", "tentative": "TENTATIVE"}.get(status, ""),
-              "attendees": [], "exdates": []}
+              "attendees": [], "exdates": [], "ragu": str(e.get("ragu", "")).strip()}
         ps = {"declined": "DECLINED", "tentative": "TENTATIVE"}.get(respon)
         if ps:
             ev["attendees"].append((kunci, ps))
@@ -366,6 +372,8 @@ def main():
                 elif partstat == "DECLINED":
                     rec["alasan"] = "ditolak (declined)"
                 else:
+                    if ev.get("ragu"):
+                        rec["flags"].append("periksa (dibaca dari screenshot): " + ev["ragu"])
                     if partstat == "TENTATIVE" or status == "TENTATIVE":
                         rec["flags"].append("tentatif")
                     if ev.get("transp") == "TRANSPARENT":
@@ -421,6 +429,14 @@ def main():
             o["alasan"] = r["alasan"]
         return o
 
+    tidak_tercakup = []
+    if COVER:
+        d = start
+        while d <= end:
+            if not any(lo_ <= d <= hi_ for lo_, hi_ in COVER):
+                tidak_tercakup.append(d.isoformat())
+            d += timedelta(days=1)
+
     hasil = {
         "rentang": {"mulai": start.isoformat(), "selesai": end.isoformat(), "zona_waktu": "Asia/Jakarta"},
         "kalender": kalender,
@@ -433,12 +449,13 @@ def main():
         "cuti_pribadi_kandidat": dict(sorted(cuti_kand.items())),
         "duplikat_digabung": dup_count,
         "di_luar_rentang": di_luar,
+        "tanggal_tidak_tercakup": tidak_tercakup,
     }
     Path(a.out).write_text(json.dumps(hasil, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"out": a.out, "kalender": kalender, "kandidat": len(kandidat), "dikecualikan": len(dikecualikan),
                       "cuti_pribadi_kandidat": len(cuti_kand), "libur_kandidat": len(libur_kand) + len(cuti_bersama_kand),
                       "duplikat_digabung": dup_count, "di_luar_rentang": di_luar,
-                      "peringatan_baca": sorted(warns)}, ensure_ascii=False, indent=2))
+                      "tanggal_tidak_tercakup": tidak_tercakup, "peringatan_baca": sorted(warns)}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

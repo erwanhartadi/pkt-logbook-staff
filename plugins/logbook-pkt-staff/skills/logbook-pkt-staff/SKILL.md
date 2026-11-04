@@ -24,7 +24,7 @@ Gaya respons: ringkas dan langsung. Bahasa Indonesia.
 ## Alur
 
 ### 1. Cek masukan (satu pesan, hanya yang kurang)
-Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics` atau `.zip` hasil ekspor kalender, atau permintaan eksplisit "akses kalender saya" (Google Calendar, lihat 3b).
+Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics` atau `.zip` hasil ekspor kalender, atau permintaan eksplisit "akses kalender saya" (Google Calendar, lihat 3b), atau 4-6 screenshot kalender mingguan (lihat 3c). Jika ada beberapa gambar dan tidak jelas mana TTD-nya, tanyakan.
 - Ambil nama dan tanggal dari argumen (dipisah `;`). Ubah tanggal ke format `YYYY-MM-DD`.
 - Ekspor Google Calendar selalu berisi **semua kalender dan seluruh riwayat** (file `.zip` berisi banyak `.ics`) dan tidak bisa dibatasi rentang tanggal. Itu tidak masalah: skrip hanya mengambil agenda di dalam rentang. Terima `.zip` apa adanya; jangan minta staf mengekstrak atau memotongnya. Beberapa `.ics` terpisah juga boleh.
 - `.ics` mentah yang dilampirkan langsung berupa teks dan bisa membanjiri chat (galat "exceeds context limit") atau terbaca sebagian. Jika staf mengalaminya, sarankan melampirkan sebagai `.zip` (kompres file `.ics`, atau pakai Pemotong Kalender di repo). Jika isi `.ics` sempat tampil di percakapan, tetap proses lewat skrip dari berkas; jangan meringkas dari teks yang tampak.
@@ -60,6 +60,15 @@ Periksa `kalender` di output (tiap kalender beserta `agenda_di_rentang`). Jika l
    Acara seharian: `mulai`/`selesai` berupa tanggal saja (`2026-11-05`; `selesai` eksklusif). `respon` adalah tanggapan staf terhadap undangan.
 5. Jalankan `python <folder-skill>/scripts/ics_events.py --gcal-json gcal_events.json --start <mulai> --end <selesai> --out events.json` (tanpa `--ics`), lalu lanjut ke langkah 4 seperti biasa. Tambahkan `gcal_events.json` ke `--hapus` di langkah 7.
 6. Ingatkan: hasil bacaan kalender tetap tampil di chat sampai chat dihapus.
+
+### 3c. Alternatif: screenshot kalender mingguan
+Untuk staf yang tidak mengekspor dan tidak menyambungkan kalender. Rentang 4 minggu biasanya 4-6 gambar.
+1. Minta staf mengambilnya begini: tampilan **Week** di Google Calendar, satu screenshot per minggu; **seluruh jam 00:00-24:00 harus terlihat** (zoom out browser dengan Ctrl/Cmd minus, atau dua screenshot pagi/sore per minggu); header tanggal dan label bulan ikut terlihat; hanya kalender kerja yang dicentang. Jika judul sering terpotong, tampilan **Schedule** lebih akurat.
+2. Baca tiap gambar: tentukan tanggal kolom dari header (perhatikan pergantian bulan/tahun dari label bulan), lalu transkripsikan setiap agenda: judul persis seperti tampil, jam mulai-selesai (dari label jam pada blok atau posisinya terhadap sumbu jam), dan acara seharian dari baris atas. Zona waktu: ikuti label di kiri atas (mis. GMT+7 = +07:00).
+3. **Jangan menebak.** Judul terpotong, jam tidak jelas, atau blok yang tumpang tindih sempit: isi `ragu` pada agenda itu dengan alasan singkat.
+4. Tulis `gcal_events.json` dengan skema 3b (`kalender`: "Screenshot", `pemilik` boleh dikosongkan), ditambah `"tercakup": [["2026-07-26", "2026-08-01"], ...]` berisi rentang tanggal tiap gambar. Jalankan seperti 3b langkah 5.
+5. Laporan memuat `tanggal_tidak_tercakup`: minta screenshot tambahan untuk tanggal itu sebelum melanjutkan bila ada hari kerja yang terlewat.
+6. Sampaikan keterbatasannya ke staf: agenda yang ditolak biasanya disembunyikan Google Calendar sehingga tidak terlihat dan tidak bisa dicek; agenda di luar jam yang terlihat hilang; akurasi bergantung keterbacaan gambar, jadi periksa butir bertanda "periksa".
 
 ### 4. Cuti pribadi (kuning)
 Tampilkan `cuti_pribadi_kandidat` ke staf dan minta konfirmasi dalam satu pertanyaan. Hanya tanggal yang dikonfirmasi yang dimasukkan ke `cuti_pribadi`. Kegiatan di hari cuti tetap ditulis bila ada.
@@ -106,7 +115,7 @@ Serahkan file ke staf agar bisa diunduh (folder output / tool pengiriman berkas 
 Sajikan dari output `build.py`:
 1. **Masuk**: jumlah butir, jumlah hari kerja terisi, perkiraan total hari kerja (`hari_kerja_perkiraan`; kolom "Total hari kerja" di berkas tetap `...` untuk diisi manual).
 2. **Tidak masuk** (tabel: tanggal, jam, judul, alasan): dari `tidak_masuk`.
-3. **Peringatan** (tabel dari `peringatan`): bentrok, tentatif, di luar jam kerja, judul ambigu, jatuh di hari libur/cuti. Ditambah `hari_kerja_kosong`, `belum_terpetakan_periksa`, `agenda_di_luar_rentang`, `peringatan_baca_ics`, dan `duplikat_digabung` bila ada.
+3. **Peringatan** (tabel dari `peringatan`): bentrok, tentatif, di luar jam kerja, judul ambigu, jatuh di hari libur/cuti. Ditambah `tanggal_tidak_tercakup` (jalur screenshot), `hari_kerja_kosong`, `belum_terpetakan_periksa`, `agenda_di_luar_rentang`, `peringatan_baca_ics`, dan `duplikat_digabung` bila ada.
 4. **Merah/kuning**: libur beserta namanya dan tanggal cuti.
 5. Penutup, selalu: "TTD dan ICS sudah dihapus dari workspace. Salinan lampiran masih ada di chat ini sampai chat dihapus. Unduh file, periksa laporan di atas, lalu hapus chat ini."
 

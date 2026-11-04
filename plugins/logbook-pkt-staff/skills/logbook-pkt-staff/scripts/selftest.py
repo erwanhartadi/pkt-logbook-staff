@@ -226,6 +226,37 @@ def test_gcal():
         check(ev["di_luar_rentang"] == 1, f"gcal: di luar rentang salah: {ev['di_luar_rentang']}")
 
 
+def test_screenshot():
+    """Jalur screenshot: JSON hasil transkripsi + cakupan tanggal + penanda ragu."""
+    from PIL import Image
+    data = {"events": [
+        {"kalender": "Screenshot", "judul": "Rapat tim", "mulai": "2026-11-03T09:00:00+07:00", "selesai": "2026-11-03T10:00:00+07:00"},
+        {"kalender": "Screenshot", "judul": "Diskusi (judul terpotong)", "mulai": "2026-11-17T14:00:00+07:00",
+         "selesai": "2026-11-17T15:00:00+07:00", "ragu": "judul terpotong"}],
+        "tercakup": [["2026-11-02", "2026-11-08"], ["2026-11-16", "2026-11-20"]]}
+    with tempfile.TemporaryDirectory() as t:
+        t = Path(t)
+        jp, out = t / "gcal_events.json", t / "ev.json"
+        jp.write_text(json.dumps(data), encoding="utf-8")
+        run(HERE / "ics_events.py", "--start", "2026-11-02", "--end", "2026-11-20", "--gcal-json", jp, "--out", out)
+        ev = json.loads(out.read_text(encoding="utf-8"))
+        want = [f"2026-11-{d:02d}" for d in range(9, 16)]
+        check(ev["tanggal_tidak_tercakup"] == want, f"screenshot: tanggal tidak tercakup salah: {ev['tanggal_tidak_tercakup']}")
+        judul = {k["judul"]: k for k in ev["kandidat"]}
+        check(any("judul terpotong" in c for c in judul["Diskusi (judul terpotong)"]["catatan"]), "screenshot: penanda ragu tidak muncul")
+        ttd = t / "ttd.png"
+        Image.new("RGB", (60, 40), "white").save(ttd)
+        ag = t / "agenda.json"
+        ag.write_text(json.dumps({"nama": "Staf Contoh", "kegiatan": {
+            "2026-11-03": [{"teks": "Rapat tim", "ids": [judul["Rapat tim"]["id"]]}],
+            "2026-11-17": [{"teks": "Diskusi", "ids": [judul["Diskusi (judul terpotong)"]["id"]]}]}}), encoding="utf-8")
+        rep = run(HERE / "build.py", "--start", "2026-11-02", "--end", "2026-11-20", "--agenda", ag, "--ttd", ttd,
+                  "--events", out, "--hapus", jp, "--out", t / "out")
+        check(rep["tanggal_tidak_tercakup"] == want, "screenshot: laporan tidak memuat tanggal tidak tercakup")
+        check(any("judul terpotong" in " ".join(p["catatan"]) for p in rep["peringatan"]), "screenshot: peringatan ragu tidak ada di laporan")
+        check(not jp.exists(), "screenshot: json sementara tidak dihapus")
+
+
 def main():
     with tempfile.TemporaryDirectory() as t:
         t = Path(t)
@@ -302,6 +333,7 @@ def main():
         check(wb.properties.creator == "Logbook PKT", "metadata creator tidak bersih")
     test_zip()
     test_gcal()
+    test_screenshot()
     print("OK")
 
 

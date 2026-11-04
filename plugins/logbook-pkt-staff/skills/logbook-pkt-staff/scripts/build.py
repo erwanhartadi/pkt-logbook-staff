@@ -276,6 +276,7 @@ def main():
             "belum_terpetakan_periksa": belum,
             "duplikat_digabung": ev.get("duplikat_digabung", 0),
             "di_luar_rentang_diabaikan": ev.get("di_luar_rentang", 0),
+            "tanggal_tidak_tercakup": ev.get("tanggal_tidak_tercakup", []),
             "peringatan_baca_ics": ev.get("peringatan_baca", []),
         })
 

@@ -30,6 +30,15 @@ Jika Google Calendar Anda sudah tersambung ke Claude (menu Connectors/Integratio
 
 Claude akan menyebutkan akun kalender yang tersambung dan meminta konfirmasi, lalu hanya membaca rentang tanggal yang diminta. **Jangan memakai cara ini di akun bersama**: kalender yang tersambung milik akun bersama, bukan milik Anda.
 
+## Alternatif tanpa ekspor: screenshot kalender per minggu
+Untuk rentang 4 minggu, siapkan 4-6 screenshot:
+1. Buka Google Calendar, pilih tampilan **Week**. Centang hanya kalender kerja Anda.
+2. Pastikan **seluruh jam 00:00-24:00 terlihat**: perkecil browser dengan Ctrl/Cmd + tanda minus beberapa kali, atau ambil dua screenshot (pagi dan sore) per minggu. Tanggal dan nama bulan di bagian atas harus ikut terlihat.
+3. Satu screenshot per minggu. Jika judul sering terpotong, coba tampilan **Schedule** (daftar).
+4. Lampirkan semua gambar beserta TTD, lalu ketik perintah seperti biasa.
+
+Keterbatasan: agenda yang Anda tolak biasanya tidak tampil di screenshot dan tidak bisa dicek, dan judul yang terpotong akan ditandai "periksa" di laporan. Claude akan memberi tahu jika ada tanggal yang belum tercakup.
+
 ## Meminta logbook
 Ketik di chat dan lampirkan TTD serta zip kalender:
 

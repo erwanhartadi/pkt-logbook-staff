@@ -44,6 +44,9 @@ cp -r pkt-logbook-staff/plugins/logbook-pkt-staff/skills/logbook-pkt-staff ~/.cl
 ## Kebutuhan
 Python 3 dengan `openpyxl`, `pillow`, dan `python-dateutil` (biasanya sudah tersedia di lingkungan code execution Claude; jika belum, skill akan memasangnya lewat `pip`).
 
+## Screenshot kalender mingguan
+Alternatif tanpa ekspor dan tanpa connector: 4-6 screenshot tampilan Week (seluruh jam terlihat). Skill menyalinnya ke format yang sama dan menandai butir yang kurang jelas. Lihat [panduan](docs/PANDUAN-STAF.md).
+
 ## Pemotong Kalender
 `dist/pemotong-kalender.html` adalah satu halaman web yang berjalan sepenuhnya di browser (tanpa unggah, tanpa internet). Ia memotong ekspor kalender menjadi zip kecil berisi agenda pada rentang tanggal yang dipilih, tanpa deskripsi, lokasi, atau peserta lain. Unduh berkasnya (**Download raw file**) lalu buka dengan klik dua kali. Perlu browser yang mendukung `DecompressionStream` (Chrome/Edge/Safari terbaru, Firefox 113+).
 
