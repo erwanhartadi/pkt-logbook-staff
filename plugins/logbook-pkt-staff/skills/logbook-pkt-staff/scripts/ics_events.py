@@ -287,6 +287,8 @@ def main():
     ap.add_argument("--email", nargs="*", default=[])
     ap.add_argument("--pakai", nargs="*", default=[],
                     help="hanya pakai kalender yang namanya/berkasnya mengandung salah satu teks ini")
+    ap.add_argument("--abaikan", nargs="*", default=[],
+                    help="lewati kalender yang namanya/berkasnya mengandung teks ini (kalender libur tidak dilewati)")
     ap.add_argument("--out", default="events.json")
     a = ap.parse_args()
     start, end = date.fromisoformat(a.start), date.fromisoformat(a.end)
@@ -311,6 +313,9 @@ def main():
 
     kalender = []
     for label, calname, owners, events in semua_sumber():
+        if a.abaikan and not KAL_LIBUR.search(calname) and any(n.lower() in f"{calname} {label}".lower() for n in a.abaikan):
+            kalender.append({"berkas": label, "nama_kalender": calname, "dipakai": False})
+            continue
         if a.pakai and not any(n.lower() in f"{calname} {label}".lower() for n in a.pakai):
             kalender.append({"berkas": label, "nama_kalender": calname, "dipakai": False})
             continue

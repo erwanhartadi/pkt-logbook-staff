@@ -13,7 +13,7 @@ Varian skill `logbook-pkt` yang bisa dipakai staf lain di PKT (Center for Tropic
 - Pemanggilan: `/logbook-pkt-staff Nama Lengkap; rentang tanggal` + lampiran TTD (gambar) dan ICS.
 - Keluaran: file logbook xlsx + laporan **masuk / tidak masuk / peringatan**.
 - TTD dan ICS dipakai sekali. Salinan di workspace dihapus otomatis setelah file jadi (`build.py --hapus`). Skill tidak menyimpan apa pun ke memory, Drive, atau Gmail.
-- Penghapusan chat tidak bisa diotomatisasi skill. Staf diminta memakai **Incognito chat** dan menghapus chat setelah mengunduh file.
+- Penghapusan chat tidak bisa diotomatisasi skill. Staf diminta menghapus chat setelah mengunduh file. **Incognito tidak bisa dipakai** (tidak bisa membuat file; terbukti di uji nyata 4 Nov 2026).
 
 ## Aturan privasi (WAJIB)
 - Paket ini **tidak boleh berisi data pemilik skill asli**: nama, email, NIP, tanda tangan, nama penerima email, ID kalender, nama proyek pribadi.
@@ -62,3 +62,9 @@ Varian skill `logbook-pkt` yang bisa dipakai staf lain di PKT (Center for Tropic
 - Uji nyata: melampirkan `.ics` hasil ekstrak (ekspor penuh) langsung ke chat memunculkan "This request exceeds Claude's context limit", karena file teks masuk ke konteks. Zip tidak dimasukkan ke konteks, jadi skill bisa memprosesnya lewat skrip. Solusi: lampirkan zip; atau pakai `dist/pemotong-kalender.html` (JS murni di browser; zip masuk, zip kecil keluar; hanya SUMMARY/waktu/RRULE/EXDATE/RECURRENCE-ID/STATUS/TRANSP dan ATTENDEE milik pemilik yang dipertahankan).
 - Aturan pemotong: agenda tunggal disimpan bila beririsan dengan rentang +-3 hari (zona waktu diabaikan, margin menutupnya); agenda berulang disimpan bila mulai sebelum akhir rentang dan UNTIL (jika ada) tidak sebelum awal; override (RECURRENCE-ID) disimpan bila ID-nya atau waktu barunya masuk jendela. `tools/selftest_pemotong.py` membuktikan hasil skill dari kalender penuh dan terpotong identik.
 - Jalur screenshot mingguan ditambahkan (SKILL.md 3c): Claude mentranskripsikan gambar ke `gcal_events.json` (skema sama dengan jalur connector) + `tercakup` (rentang tanggal tiap gambar) + `ragu` per agenda. Skrip melaporkan `tanggal_tidak_tercakup` dan menandai butir `ragu`. Risiko utama: jam di luar area terlihat (mis. agenda 03:00 atau 21:00), judul terpotong, agenda yang ditolak tidak tampil. Belum diuji dengan screenshot sungguhan; hanya JSON fiktif.
+
+## Mode hemat (4 Nov 2026, permintaan: seringan mungkin untuk akun Free)
+- Rekomendasi utama final: jalankan di **akun pribadi, chat biasa (bukan Incognito)**; hapus chat sesudahnya; opsional matikan "Generate memory from chats". Incognito tidak bisa membuat file, jadi tidak bisa dipakai. SKILL.md langkah 0 membuat skill berhenti dengan dua kalimat bila tidak bisa menjalankan kode/membuat file, dan tidak boleh menulis logbook sebagai teks.
+- `scripts/logbook_cepat.py`: satu perintah dari zip/.ics/`gcal_events.json` ke xlsx + laporan ringkas. Judul agenda dipakai apa adanya; otomatis dibuang dan dilaporkan: kalender Birthdays/Ulang tahun (`--abaikan`), agenda "free", diduga bukan kerja, judul kembar di hari yang sama. Libur dari kalender libur dan cuti berjudul "cuti bersama/libur" otomatis merah; cuti lain kuning. Laporan dibatasi (maks 8 butir per daftar). Berkas sensitif dihapus oleh `build.py --hapus`.
+- Jalur tambahan dipindah ke `references/` (`gcal.md`, `screenshot.md`, `rapi.md`) agar SKILL.md pendek dan hanya dibaca bila perlu (hemat token). Mode `rapikan` = alur lama (Claude menulis ulang tiap agenda).
+- Keterbatasan: belum diuji di claude.ai sungguhan pada chat biasa (hanya selftest fiktif). Mode hemat menerima kandidat libur/cuti dari kalender apa adanya; staf diminta memeriksa baris Merah/Kuning di laporan.

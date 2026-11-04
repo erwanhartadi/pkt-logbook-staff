@@ -257,6 +257,50 @@ def test_screenshot():
         check(not jp.exists(), "screenshot: json sementara tidak dihapus")
 
 
+def test_cepat():
+    """Mode hemat: satu perintah dari zip -> xlsx + laporan ringkas; TTD dan zip terhapus."""
+    from PIL import Image
+    ulang_tahun = """BEGIN:VCALENDAR
+VERSION:2.0
+X-WR-CALNAME:Birthdays
+BEGIN:VEVENT
+UID:b1
+SUMMARY:Ulang tahun teman
+DTSTART;TZID=Asia/Jakarta:20261103T100000
+DTEND;TZID=Asia/Jakarta:20261103T110000
+END:VEVENT
+END:VCALENDAR
+"""
+    with tempfile.TemporaryDirectory() as t:
+        t = Path(t)
+        z = t / "ekspor.zip"
+        with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(f"{OWNER}.ics", MAIN_ICS)
+            zf.writestr("Holidays in Indonesia.ics", HOLIDAY_ICS)
+            zf.writestr("Birthdays.ics", ulang_tahun)
+        ttd = t / "ttd.png"
+        Image.new("RGB", (60, 40), "white").save(ttd)
+        r = subprocess.run([sys.executable, "-I", str(HERE / "logbook_cepat.py"), "--nama", "Staf Contoh",
+                            "--start", "2026-11-02", "--end", "2026-11-20", "--ttd", str(ttd), "--ics", str(z),
+                            "--out", str(t / "out")], capture_output=True, text=True)
+        check(r.returncode == 0, f"cepat: gagal jalan\n{r.stdout}\n{r.stderr}")
+        first, _, laporan = r.stdout.partition("\n")
+        check(first.startswith("BERKAS: "), "cepat: baris BERKAS tidak ada")
+        xlsx = Path(first[len("BERKAS: "):])
+        check(xlsx.is_file(), "cepat: xlsx tidak dibuat")
+        check(not ttd.exists() and not z.exists(), "cepat: TTD/zip tidak dihapus")
+        check(len(laporan) < 3000, f"cepat: laporan terlalu panjang ({len(laporan)} karakter)")
+        check("Hari Contoh Libur" in laporan, "cepat: libur tidak dilaporkan")
+        check("ditolak" in laporan, "cepat: agenda ditolak tidak dilaporkan")
+        ws = load_workbook(xlsx).worksheets[0]
+        teks = " ".join(str(ws.cell(r_, 3).value or "") for r_ in range(6, 6 + 19))
+        check("Rapat koordinasi tim" in teks, "cepat: agenda kerja tidak masuk")
+        check("Lunch" not in teks and "Rapat yang ditolak" not in teks, "cepat: agenda non-kerja/ditolak ikut masuk")
+        check("Ulang tahun teman" not in teks, "cepat: kalender Birthdays tidak diabaikan")
+        check(ws["C" + str(6 + 3)].fill.fgColor.rgb == "FFFFFF00", "cepat: cuti 5 Nov tidak kuning")
+        check(ws["C" + str(6 + 10)].fill.fgColor.rgb == "FFFF0000", "cepat: libur 12 Nov tidak merah")
+
+
 def main():
     with tempfile.TemporaryDirectory() as t:
         t = Path(t)
@@ -334,6 +378,7 @@ def main():
     test_zip()
     test_gcal()
     test_screenshot()
+    test_cepat()
     print("OK")
 
 

@@ -1,7 +1,7 @@
 # Panduan: Menyusun Logbook PKT dengan Claude (1 halaman)
 
 ## Sebelum mulai
-1. Buka Claude kantor dan mulai **Incognito chat** (ikon hantu di pojok atas). Chat tidak masuk riwayat atau memori.
+1. Buka **chat baru biasa** di akun Claude pribadi Anda. **Jangan Incognito**: chat Incognito tidak bisa membuat file, sehingga logbook tidak akan jadi. Skill harus sudah terpasang (lihat README) dan *Code execution and file creation* menyala.
 2. Siapkan dua berkas:
    - **Tanda tangan**: foto atau scan di atas kertas putih (PNG/JPG).
    - **Kalender**: zip hasil ekspor atau zip dari Pemotong Kalender, lihat langkah di bawah.
@@ -44,7 +44,15 @@ Ketik di chat dan lampirkan TTD serta zip kalender:
 
 `/logbook-pkt-staff Nama Lengkap Anda; 1 November 2026 - 30 November 2026`
 
-Claude mungkin bertanya: tanggal cuti Anda (konfirmasi), email kalender, atau agenda yang judulnya tidak jelas.
+Opsi tambahan (boleh ditulis di perintah): `kalender: Nama Kalender` (pakai satu kalender saja), `libur: 2026-11-12` (tanggal libur nasional/cuti bersama bila tidak terbaca), `cuti: 2026-11-05`, `rapikan` (Claude menulis ulang agenda ke bahasa logbook; lebih boros kuota).
+
+Claude hanya bertanya bila ada masukan wajib yang kurang. Judul agenda dipakai apa adanya.
+
+## Hemat kuota (terutama akun Free)
+- Satu chat baru per logbook. Jangan melanjutkan chat lama.
+- Paling murah: zip dari Pemotong Kalender. Hindari `.ics` mentah, screenshot banyak, dan `rapikan` saat kuota mepet.
+- Hindari revisi lewat chat. Edit langsung di Excel (TTD sudah dihapus dari ruang kerja setelah file jadi, jadi revisi lewat chat butuh TTD dilampirkan ulang).
+- Kuota habis di tengah jalan: ulangi perintah yang sama nanti, atau pecah menjadi dua rentang.
 
 ## Membaca hasil
 Anda akan menerima:
@@ -58,9 +66,10 @@ Periksa laporan. Isi manual hari yang kosong dan kolom "Total hari kerja".
 
 ## Setelah selesai (wajib)
 1. **Unduh** file logbook.
-2. **Hapus chat** ini (menu chat > Hapus). TTD dan ICS sudah dihapus dari ruang kerja Claude, tetapi lampiran masih tersimpan di chat sampai chat dihapus.
+2. **Hapus chat** ini (menu chat > Hapus). TTD dan kalender sudah dihapus dari ruang kerja Claude, tetapi lampiran masih tersimpan di chat sampai chat dihapus.
 3. Jangan menyimpan TTD atau kalender ke Drive bersama akun ini.
 
 ## Catatan
-- Akun ini dipakai bersama. Jangan menyambungkan kalender, Gmail, atau Drive pribadi ke akun ini.
-- Kalau hasil belum sesuai, minta revisi di chat yang sama sebelum menghapusnya. TTD perlu dilampirkan ulang.
+- Jika memakai akun bersama (kantor), jangan menyambungkan kalender, Gmail, atau Drive pribadi ke akun itu, dan jangan pakai jalur `akses kalender saya`.
+- Kalau hasil belum sesuai, edit manual di Excel. Revisi lewat chat boros kuota dan butuh TTD dilampirkan ulang.
+- Opsional: sebelum memakai skill, matikan *Generate memory from chats* di Settings agar chat ini tidak ikut memori.
