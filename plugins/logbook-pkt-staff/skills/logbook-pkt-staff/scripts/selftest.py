@@ -197,6 +197,35 @@ END:VCALENDAR
         check([k["dipakai"] for k in res2["kalender"]].count(False) == 1, "zip: status dipakai salah")
 
 
+def test_gcal():
+    """Jalur Google Calendar: JSON ringkas -> pipeline yang sama."""
+    data = {"pemilik": OWNER, "events": [
+        {"kalender": "Kerja", "judul": "Rapat mingguan", "mulai": "2026-11-03T09:00:00+07:00", "selesai": "2026-11-03T10:00:00+07:00"},
+        {"kalender": "Kerja", "judul": "Webinar UTC", "mulai": "2026-11-03T06:00:00Z", "selesai": "2026-11-03T07:00:00Z"},
+        {"kalender": "Kerja", "judul": "Rapat ditolak", "mulai": "2026-11-04T10:00:00+07:00", "selesai": "2026-11-04T11:00:00+07:00", "respon": "declined"},
+        {"kalender": "Kerja", "judul": "Rapat batal", "mulai": "2026-11-04T13:00:00+07:00", "selesai": "2026-11-04T14:00:00+07:00", "status": "cancelled"},
+        {"kalender": "Kerja", "judul": "Cuti tahunan", "mulai": "2026-11-05", "selesai": "2026-11-06"},
+        {"kalender": "Kerja", "judul": "Diskusi tentatif", "mulai": "2026-11-05T14:00:00+07:00", "selesai": "2026-11-05T15:00:00+07:00", "respon": "tentative"},
+        {"kalender": "Holidays in Indonesia", "judul": "Hari Contoh Libur", "mulai": "2026-11-12", "selesai": "2026-11-13"},
+        {"kalender": "Kerja", "judul": "Di luar rentang", "mulai": "2026-12-01T09:00:00+07:00", "selesai": "2026-12-01T10:00:00+07:00"},
+    ]}
+    with tempfile.TemporaryDirectory() as t:
+        t = Path(t)
+        jp, out = t / "gcal_events.json", t / "ev.json"
+        jp.write_text(json.dumps(data), encoding="utf-8")
+        res = run(HERE / "ics_events.py", "--start", "2026-11-02", "--end", "2026-11-20", "--gcal-json", jp, "--out", out)
+        ev = json.loads(out.read_text(encoding="utf-8"))
+        judul = {k["judul"]: k for k in ev["kandidat"]}
+        check(len(res["kalender"]) == 2, f"gcal: ringkasan kalender salah: {res['kalender']}")
+        check(judul["Webinar UTC"]["mulai"] == "13:00", "gcal: konversi UTC salah")
+        check(any(x["alasan"].startswith("ditolak") for x in ev["dikecualikan"]), "gcal: declined tidak dikecualikan")
+        check(any(x["alasan"].startswith("dibatalkan") for x in ev["dikecualikan"]), "gcal: cancelled tidak dikecualikan")
+        check("2026-11-05" in ev["cuti_pribadi_kandidat"], "gcal: cuti tidak terdeteksi")
+        check("tentatif" in judul["Diskusi tentatif"]["catatan"], "gcal: tentatif tidak ditandai")
+        check("2026-11-12" in ev["libur_kandidat_dari_ics"], "gcal: libur tidak terdeteksi")
+        check(ev["di_luar_rentang"] == 1, f"gcal: di luar rentang salah: {ev['di_luar_rentang']}")
+
+
 def main():
     with tempfile.TemporaryDirectory() as t:
         t = Path(t)
@@ -272,6 +301,7 @@ def main():
         check(len(ws._images) == hari_kerja_bertanda, f"jumlah TTD {len(ws._images)} != {hari_kerja_bertanda}")
         check(wb.properties.creator == "Logbook PKT", "metadata creator tidak bersih")
     test_zip()
+    test_gcal()
     print("OK")
 
 

@@ -232,6 +232,41 @@ def iter_sources(paths, warns):
             yield pp.name, pp.read_text(encoding="utf-8", errors="replace")
 
 
+def parse_iso(s):
+    s = str(s).strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
+        return date.fromisoformat(s)
+    d = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    return d if d.tzinfo else d.replace(tzinfo=WIB)
+
+
+def read_gcal_json(path, warns):
+    """JSON ringkas dari connector Google Calendar -> [(label, nama_kalender, pemilik, events)]
+    dengan bentuk events yang sama seperti hasil read_ics."""
+    raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    email = str(raw.get("pemilik", "")).lower().strip()
+    kunci = email or "pemilik"
+    per_kal = {}
+    for i, e in enumerate(raw.get("events", [])):
+        try:
+            s = parse_iso(e["mulai"])
+            en = parse_iso(e["selesai"]) if e.get("selesai") else None
+        except Exception as ex:
+            warns.add(f"gcal: agenda '{e.get('judul', '?')}' dilewati (waktu tidak terbaca: {ex})")
+            continue
+        status = str(e.get("status", "")).lower()
+        respon = str(e.get("respon", "")).lower()
+        ev = {"summary": str(e.get("judul", "")).strip(), "uid": f"g{i}", "dtstart": s, "dtend": en,
+              "status": {"cancelled": "CANCELLED", "tentative": "TENTATIVE"}.get(status, ""),
+              "attendees": [], "exdates": []}
+        ps = {"declined": "DECLINED", "tentative": "TENTATIVE"}.get(respon)
+        if ps:
+            ev["attendees"].append((kunci, ps))
+        per_kal.setdefault(str(e.get("kalender", "Google Calendar")), []).append(ev)
+    for cal, evs in per_kal.items():
+        yield f"gcal:{cal}", cal, {kunci}, evs
+
+
 def normalisasi(t):
     return re.sub(r"\s+", " ", t.strip().lower())
 
@@ -240,7 +275,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", required=True)
     ap.add_argument("--end", required=True)
-    ap.add_argument("--ics", nargs="+", required=True, help="file .ics dan/atau .zip hasil ekspor")
+    ap.add_argument("--ics", nargs="*", default=[], help="file .ics dan/atau .zip hasil ekspor")
+    ap.add_argument("--gcal-json", nargs="*", default=[],
+                    help="JSON ringkas agenda dari connector Google Calendar (hanya bila staf memintanya)")
     ap.add_argument("--email", nargs="*", default=[])
     ap.add_argument("--pakai", nargs="*", default=[],
                     help="hanya pakai kalender yang namanya/berkasnya mengandung salah satu teks ini")
@@ -256,9 +293,18 @@ def main():
     mentah, di_luar = [], 0
     libur_kand, cuti_bersama_kand, cuti_kand = {}, {}, {}
 
+    if not a.ics and not a.gcal_json:
+        sys.exit("Beri --ics (file .ics/.zip) atau --gcal-json.")
+
+    def semua_sumber():
+        for lbl, teks in iter_sources(a.ics, warns):
+            cn, ow, evs = read_ics(teks, a.email, warns)
+            yield lbl, cn, ow, evs
+        for p in a.gcal_json:
+            yield from read_gcal_json(p, warns)
+
     kalender = []
-    for label, teks in iter_sources(a.ics, warns):
-        calname, owners, events = read_ics(teks, a.email, warns)
+    for label, calname, owners, events in semua_sumber():
         if a.pakai and not any(n.lower() in f"{calname} {label}".lower() for n in a.pakai):
             kalender.append({"berkas": label, "nama_kalender": calname, "dipakai": False})
             continue

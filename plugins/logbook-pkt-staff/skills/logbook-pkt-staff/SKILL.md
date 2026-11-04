@@ -1,6 +1,6 @@
 ---
 name: logbook-pkt-staff
-description: Susun logbook harian staf PKT UGM (.xlsx) dari file kalender ICS untuk rentang tanggal tertentu, lengkap dengan blok merah libur, kuning cuti, TTD per hari, dan laporan agenda yang masuk/tidak masuk. Pakai saat staf meminta "logbook PKT", "isi logbook", atau "/logbook-pkt-staff". TTD dan ICS dipakai sekali lalu dihapus.
+description: Susun logbook harian staf PKT UGM (.xlsx) dari file kalender ICS (atau Google Calendar bila staf memintanya) untuk rentang tanggal tertentu, lengkap dengan blok merah libur, kuning cuti, TTD per hari, dan laporan agenda yang masuk/tidak masuk. Pakai saat staf meminta "logbook PKT", "isi logbook", atau "/logbook-pkt-staff". TTD dan ICS dipakai sekali lalu dihapus.
 argument-hint: Nama Lengkap; rentang tanggal (mis. 1 Nov 2026 - 30 Nov 2026) + lampiran TTD dan ICS
 ---
 
@@ -10,7 +10,7 @@ Panggilan: `/logbook-pkt-staff Nama Lengkap; 1 Nov 2026 - 30 Nov 2026` dengan la
 Gaya respons: ringkas dan langsung. Bahasa Indonesia.
 
 ## Aturan privasi (berlaku sepanjang proses)
-- Akun ini dipakai bersama. **Jangan memakai connector** kalender, Gmail, atau Drive, walaupun tersambung. Sumber agenda hanya ICS, screenshot, atau isian staf.
+- Akun bisa dipakai bersama. **Jangan memakai connector Gmail atau Drive.** Connector Google Calendar **hanya** dipakai bila staf menulis eksplisit di chat (mis. "akses kalender saya", "pakai gcal"); lihat langkah 3b. Selain itu sumber agenda adalah ICS, screenshot, atau isian staf.
 - **Jangan menyimpan** nama, TTD, agenda, atau isi logbook ke memory, Drive, Gmail, maupun berkas di luar folder kerja. Jangan memanggil tool memory.
 - Jika chat ini bukan Incognito, sampaikan sekali di awal: "Disarankan memakai Incognito chat. Hapus chat setelah mengunduh file."
 - TTD hanya dipakai untuk satu logbook ini. Jangan menampilkan atau mendeskripsikan isi gambar TTD.
@@ -24,7 +24,7 @@ Gaya respons: ringkas dan langsung. Bahasa Indonesia.
 ## Alur
 
 ### 1. Cek masukan (satu pesan, hanya yang kurang)
-Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics` atau `.zip` hasil ekspor kalender.
+Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics` atau `.zip` hasil ekspor kalender, atau permintaan eksplisit "akses kalender saya" (Google Calendar, lihat 3b).
 - Ambil nama dan tanggal dari argumen (dipisah `;`). Ubah tanggal ke format `YYYY-MM-DD`.
 - Ekspor Google Calendar selalu berisi **semua kalender dan seluruh riwayat** (file `.zip` berisi banyak `.ics`) dan tidak bisa dibatasi rentang tanggal. Itu tidak masalah: skrip hanya mengambil agenda di dalam rentang. Terima `.zip` apa adanya; jangan minta staf mengekstrak atau memotongnya. Beberapa `.ics` terpisah juga boleh.
 - Jika email kalender tidak terbaca otomatis, tanyakan email kalendernya untuk mendeteksi agenda yang ditolak (opsional).
@@ -44,6 +44,21 @@ python <folder-skill>/scripts/ics_events.py --start <mulai> --end <selesai> --ic
 `events.json` berisi: `kandidat` (dengan `id` dan `catatan`), `dikecualikan` (dengan `alasan`: ditolak, dibatalkan, acara sehari penuh), `cuti_pribadi_kandidat`, `libur_kandidat_dari_ics`, `duplikat_digabung`, `di_luar_rentang`, `peringatan_baca`. Semua waktu sudah dalam WIB.
 
 Periksa `kalender` di output (tiap kalender beserta `agenda_di_rentang`). Jika lebih dari satu kalender punya agenda, tanyakan ke staf dalam satu pertanyaan kalender mana yang dipakai untuk logbook (biasanya kalender kerja; kalender pribadi, ulang tahun, atau hari libur biasanya tidak), lalu jalankan ulang dengan `--pakai <potongan nama kalender atau berkas>`. Jangan menampilkan judul agenda dari kalender yang tidak dipilih atau dari luar rentang.
+
+### 3b. Alternatif: Google Calendar (hanya jika staf menulis "akses kalender saya" / "pakai gcal")
+1. Pastikan tool Google Calendar tersedia. Jika tidak, katakan belum tersambung (sambungkan lewat pengaturan connector) dan tawarkan ICS.
+2. Sebutkan akun kalender yang tersambung (email kalender utama) dan minta konfirmasi bahwa itu kalender staf sendiri. Jika akun Claude ini dipakai bersama, kalender yang tersambung milik akun bersama, bukan milik staf: jangan dilanjutkan, minta ICS.
+3. Ambil agenda **hanya** untuk rentang tanggal yang diminta, dengan jadwal berulang sudah diperluas per kejadian. Jika ada beberapa kalender, tanyakan kalender mana yang dipakai (satu pertanyaan).
+4. Tulis `gcal_events.json` di folder kerja dengan field minimal berikut. Jangan menyimpan deskripsi, lokasi, atau peserta.
+```json
+{"pemilik": "<email kalender>",
+ "events": [{"kalender": "Kerja", "judul": "Rapat mingguan",
+             "mulai": "2026-11-03T09:00:00+07:00", "selesai": "2026-11-03T10:00:00+07:00",
+             "respon": "declined|tentative|accepted", "status": "cancelled|tentative|confirmed"}]}
+```
+   Acara seharian: `mulai`/`selesai` berupa tanggal saja (`2026-11-05`; `selesai` eksklusif). `respon` adalah tanggapan staf terhadap undangan.
+5. Jalankan `python <folder-skill>/scripts/ics_events.py --gcal-json gcal_events.json --start <mulai> --end <selesai> --out events.json` (tanpa `--ics`), lalu lanjut ke langkah 4 seperti biasa. Tambahkan `gcal_events.json` ke `--hapus` di langkah 7.
+6. Ingatkan: hasil bacaan kalender tetap tampil di chat sampai chat dihapus.
 
 ### 4. Cuti pribadi (kuning)
 Tampilkan `cuti_pribadi_kandidat` ke staf dan minta konfirmasi dalam satu pertanyaan. Hanya tanggal yang dikonfirmasi yang dimasukkan ke `cuti_pribadi`. Kegiatan di hari cuti tetap ditulis bila ada.
@@ -80,7 +95,7 @@ Hari kerja tanpa agenda tidak dimasukkan (baris dibiarkan kosong untuk diisi man
 ### 7. Bangun xlsx dan hapus berkas sensitif
 ```bash
 python <folder-skill>/scripts/build.py --start <mulai> --end <selesai> --agenda agenda.json \
-  --ttd <file-ttd> --events events.json --hapus <file.zip | file1.ics ...> --out <folder-output>
+  --ttd <file-ttd> --events events.json --hapus <file.zip | file1.ics | gcal_events.json ...> --out <folder-output>
 ```
 Skrip mengisi template (merah untuk akhir pekan/libur tanpa TTD, kuning untuk cuti dengan TTD, TTD di hari kerja), menambah baris bila rentang > 26 hari, membuat laporan JSON, lalu **menghapus TTD dan ICS** dari workspace. Nama berkas: `Logbook_<Nama>_<Periode>.xlsx`.
 Jika `gagal_dihapus` tidak kosong, sebutkan berkas mana.

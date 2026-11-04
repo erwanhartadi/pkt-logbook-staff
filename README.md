@@ -45,7 +45,7 @@ cp -r pkt-logbook-staff/plugins/logbook-pkt-staff/skills/logbook-pkt-staff ~/.cl
 Python 3 dengan `openpyxl`, `pillow`, dan `python-dateutil` (biasanya sudah tersedia di lingkungan code execution Claude; jika belum, skill akan memasangnya lewat `pip`).
 
 ## Akun pribadi vs akun bersama
-Di akun pribadi, Anda boleh menyambungkan kalender sendiri, tetapi skill ini dirancang memakai file ICS agar tidak bergantung pada connector dan bisa dipakai di akun bersama. Jangan menyambungkan kalender, Gmail, atau Drive pribadi ke akun yang dipakai bersama.
+Di akun pribadi dengan Google Calendar tersambung, tulis `akses kalender saya` pada perintah agar skill membaca kalender tanpa ekspor ICS (hanya rentang tanggal yang diminta, setelah konfirmasi akun). Di akun bersama gunakan ICS; jangan menyambungkan kalender, Gmail, atau Drive pribadi ke akun bersama.
 
 ## Privasi
 - Skill tidak menyimpan nama, TTD, atau agenda ke memory.

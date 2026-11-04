@@ -58,3 +58,4 @@ Varian skill `logbook-pkt` yang bisa dipakai staf lain di PKT (Center for Tropic
 - Ekspor Google Calendar mengunduh **semua kalender dan seluruh riwayat** (zip berisi banyak .ics); tidak bisa dibatasi rentang tanggal.
 - Solusi: `ics_events.py` menerima `.zip`, menyaring per rentang, melaporkan ringkasan per kalender, dan `--pakai` memilih kalender. SKILL.md meminta staf memilih kalender bila lebih dari satu punya agenda.
 - Skill berlaku di akun Free (dengan code execution); belum diuji di akun Free sungguhan.
+- Jalur Google Calendar (connector) ditambahkan atas permintaan: aktif hanya jika staf menulis "akses kalender saya"/"pakai gcal". Claude menulis JSON ringkas (`gcal_events.json`, tanpa deskripsi/lokasi/peserta) lalu `ics_events.py --gcal-json` memakai pipeline dan laporan yang sama. Di akun bersama jalur ini tidak boleh dipakai (kalender yang tersambung milik akun bersama). Belum diuji dengan connector sungguhan; hanya diuji dengan JSON fiktif.

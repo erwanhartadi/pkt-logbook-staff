@@ -15,6 +15,13 @@ Tidak nyaman mengunggah seluruh kalender? Pilihan lain:
 - Ekspor satu kalender saja: Setelan > klik nama kalender di kiri > **Ekspor kalender** (tetap seluruh riwayat kalender itu).
 - Kirim screenshot kalender untuk rentang yang diminta, atau ketik daftar kegiatan per tanggal.
 
+## Alternatif tanpa ekspor: Google Calendar tersambung (akun pribadi)
+Jika Google Calendar Anda sudah tersambung ke Claude (menu Connectors/Integrations), Anda bisa melewati ekspor. Tambahkan `akses kalender saya` pada perintah:
+
+`/logbook-pkt-staff Nama Lengkap Anda; 1 November 2026 - 30 November 2026; akses kalender saya`
+
+Claude akan menyebutkan akun kalender yang tersambung dan meminta konfirmasi, lalu hanya membaca rentang tanggal yang diminta. **Jangan memakai cara ini di akun bersama**: kalender yang tersambung milik akun bersama, bukan milik Anda.
+
 ## Meminta logbook
 Ketik di chat dan lampirkan TTD serta file `.ics`:
 
