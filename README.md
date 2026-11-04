@@ -6,7 +6,7 @@ Skill Claude untuk menyusun **logbook harian staf PKT UGM** (.xlsx) dari file ka
 - Tidak ada data pribadi di repo ini. Jangan pernah meng-commit file `.ics`, tanda tangan, atau logbook terisi (sudah dicegah `.gitignore`).
 
 ## Cara pakai (ringkas)
-1. Ekspor kalender Anda ([panduan](docs/PANDUAN-STAF.md)). File `.zip` dari Google Calendar boleh langsung dilampirkan; tidak perlu dipotong per tanggal.
+1. Ekspor kalender Anda ([panduan](docs/PANDUAN-STAF.md)). Lampirkan sebagai **zip** (jangan `.ics` hasil ekstrak, karena bisa melebihi batas chat). Disarankan dipotong dulu per rentang tanggal dengan [Pemotong Kalender](dist/pemotong-kalender.html).
 2. Buka **Incognito chat** di Claude.
 3. Ketik dan lampirkan TTD (gambar) serta file `.ics`:
 
@@ -44,6 +44,9 @@ cp -r pkt-logbook-staff/plugins/logbook-pkt-staff/skills/logbook-pkt-staff ~/.cl
 ## Kebutuhan
 Python 3 dengan `openpyxl`, `pillow`, dan `python-dateutil` (biasanya sudah tersedia di lingkungan code execution Claude; jika belum, skill akan memasangnya lewat `pip`).
 
+## Pemotong Kalender
+`dist/pemotong-kalender.html` adalah satu halaman web yang berjalan sepenuhnya di browser (tanpa unggah, tanpa internet). Ia memotong ekspor kalender menjadi zip kecil berisi agenda pada rentang tanggal yang dipilih, tanpa deskripsi, lokasi, atau peserta lain. Unduh berkasnya (**Download raw file**) lalu buka dengan klik dua kali. Perlu browser yang mendukung `DecompressionStream` (Chrome/Edge/Safari terbaru, Firefox 113+).
+
 ## Akun pribadi vs akun bersama
 Di akun pribadi dengan Google Calendar tersambung, tulis `akses kalender saya` pada perintah agar skill membaca kalender tanpa ekspor ICS (hanya rentang tanggal yang diminta, setelah konfirmasi akun). Di akun bersama gunakan ICS; jangan menyambungkan kalender, Gmail, atau Drive pribadi ke akun bersama.
 
@@ -55,14 +58,16 @@ Di akun pribadi dengan Google Calendar tersambung, tulis `akses kalender saya` p
 ## Isi repo
 - `plugins/logbook-pkt-staff/skills/logbook-pkt-staff/`: skill (instruksi, skrip, template).
 - `dist/logbook-pkt-staff.zip`: paket untuk diunggah di Claude (Opsi A). Dibuat ulang setiap kali skill berubah.
+- `dist/pemotong-kalender.html`: pemotong kalender di browser (opsional, disarankan).
 - `docs/PANDUAN-STAF.md`: panduan satu halaman untuk staf.
+- `tools/`: uji pemotong kalender (Node + Python).
 - `docs/CONTEXT.md`: konteks dan keputusan desain untuk pemelihara.
 
 ## Uji (pemelihara)
 ```
 python plugins/logbook-pkt-staff/skills/logbook-pkt-staff/scripts/selftest.py   # harus mencetak OK
 ```
-Uji memakai data fiktif. Setelah mengubah skill, bangun ulang `dist/logbook-pkt-staff.zip` (folder `logbook-pkt-staff` di akar zip).
+Uji memakai data fiktif. Pemotong kalender: `python tools/selftest_pemotong.py` (butuh Node 20+; memastikan hasil skill dari kalender penuh dan terpotong identik). Setelah mengubah skill, bangun ulang `dist/logbook-pkt-staff.zip` (folder `logbook-pkt-staff` di akar zip).
 
 ## Pemelihara
 Template memuat nama Direktur PKT pada footer "Mengetahui". Ubah di `templates/kosong.xlsx` bila direktur berganti.

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pemotong Kalender</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.4rem; margin-bottom: .25rem; }
+  .note { padding: .6rem .8rem; border-radius: 8px; background: rgba(46,125,50,.12); border: 1px solid rgba(46,125,50,.4); }
+  label { display: block; margin-top: 1rem; font-weight: 600; }
+  small { display: block; font-weight: 400; opacity: .75; }
+  input[type=file], input[type=date], input[type=text] { margin-top: .35rem; max-width: 100%; font: inherit; }
+  input[type=text] { width: 100%; box-sizing: border-box; padding: .4rem; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  button { margin-top: 1.25rem; padding: .6rem 1.2rem; font: inherit; font-weight: 600; border-radius: 8px; border: 0; background: #2d6cdf; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  #hasil { margin-top: 1.25rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: .5rem; }
+  td, th { padding: .3rem .5rem; border-bottom: 1px solid rgba(128,128,128,.35); text-align: left; }
+  .err { color: #c62828; font-weight: 600; }
+  a.unduh { display: inline-block; margin-top: .75rem; padding: .6rem 1.2rem; border-radius: 8px; background: #2e7d32; color: #fff; text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Pemotong Kalender</h1>
+<p class="note">Diproses di browser Anda. Kalender tidak diunggah ke mana pun. Hasilnya hanya berisi agenda pada rentang tanggal yang dipilih, tanpa deskripsi, lokasi, dan daftar peserta.</p>
+
+<label for="berkas">1. Pilih hasil ekspor kalender (.zip atau .ics)
+  <small>Boleh beberapa file. Zip dari Google Calendar tidak perlu diekstrak.</small></label>
+<input id="berkas" type="file" accept=".zip,.ics" multiple>
+
+<label>2. Rentang tanggal logbook</label>
+<div class="row">
+  <div>Mulai<br><input id="mulai" type="date"></div>
+  <div>Selesai<br><input id="selesai" type="date"></div>
+</div>
+
+<label for="email">3. Email kalender Anda (opsional)
+  <small>Untuk mendeteksi agenda yang Anda tolak. Pisahkan dengan koma jika lebih dari satu.</small></label>
+<input id="email" type="text" placeholder="nama@contoh.id" autocomplete="off">
+
+<button id="tombol" disabled>Potong kalender</button>
+<div id="hasil" aria-live="polite"></div>
+
+<script>
+// ==== CORE-START
+const KEEP = new Set(["UID", "SUMMARY", "DTSTART", "DTEND", "DURATION", "RRULE", "EXDATE", "RECURRENCE-ID", "STATUS", "TRANSP"]);
+const DAY = 86400000;
+
+function unfold(text) {
+  return text.replace(/\r\n?/g, "\n").replace(/\n[ \t]/g, "").split("\n");
+}
+
+function splitProp(line) {
+  let inq = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') inq = !inq;
+    else if (ch === ":" && !inq) {
+      const head = line.slice(0, i);
+      return { name: head.split(";")[0].toUpperCase(), value: line.slice(i + 1) };
+    }
+  }
+  return null;
+}
+
+function ms(v) {
+  const m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/.exec(String(v).trim());
+  if (!m) return null;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+}
+
+function parseDur(v) {
+  const m = /^P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(v).trim());
+  if (!m) return 0;
+  const [w, d, h, mi, s] = m.slice(1).map(x => +x || 0);
+  return (((w * 7 + d) * 24 + h) * 60 + mi) * 60000 + s * 1000;
+}
+
+function parseCalendars(text) {
+  const cals = [];
+  let cur = null, ev = null, skip = 0;
+  for (const line of unfold(text)) {
+    const U = line.trim().toUpperCase();
+    if (U === "BEGIN:VCALENDAR") { cur = { name: "", events: [] }; cals.push(cur); continue; }
+    if (!cur) continue;
+    if (U === "BEGIN:VTIMEZONE" || U === "BEGIN:VALARM") { skip++; continue; }
+    if (U === "END:VTIMEZONE" || U === "END:VALARM") { skip = Math.max(0, skip - 1); continue; }
+    if (skip) continue;
+    if (U === "BEGIN:VEVENT") { ev = []; continue; }
+    if (U === "END:VEVENT") { if (ev) cur.events.push(ev); ev = null; continue; }
+    const p = splitProp(line);
+    if (!p) continue;
+    if (ev) ev.push({ line, name: p.name, value: p.value });
+    else if (p.name === "X-WR-CALNAME") cur.name = p.value.replace(/\\,/g, ",").trim();
+  }
+  return cals;
+}
+
+// lo/hi: batas jendela (ms, sudah ditambah margin). Zona waktu diabaikan; margin menutup selisihnya.
+function selectEvent(props, lo, hi) {
+  const g = n => props.find(p => p.name === n);
+  const ds = g("DTSTART");
+  if (!ds) return false;
+  const s = ms(ds.value);
+  if (s === null) return true;
+  const rid = g("RECURRENCE-ID"), rr = g("RRULE");
+  if (rid) {
+    const r = ms(rid.value);
+    return (r !== null && r >= lo && r <= hi) || (s >= lo && s <= hi);
+  }
+  if (rr) {
+    if (s > hi) return false;
+    const u = /UNTIL=([0-9TZ]+)/.exec(rr.value);
+    if (u) { const ue = ms(u[1]); if (ue !== null && ue < lo) return false; }
+    return true;
+  }
+  const de = g("DTEND"), du = g("DURATION");
+  let e = de ? ms(de.value) : (du ? s + parseDur(du.value) : s);
+  if (e === null) e = s;
+  return s <= hi && e >= lo;
+}
+
+function emitCalendar(cal, lo, hi, owners) {
+  const kept = cal.events.filter(ev => selectEvent(ev, lo, hi));
+  const out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//pemotong-kalender//ID"];
+  if (cal.name) out.push("X-WR-CALNAME:" + cal.name.replace(/,/g, "\\,"));
+  for (const ev of kept) {
+    out.push("BEGIN:VEVENT");
+    for (const p of ev) {
+      if (KEEP.has(p.name)) out.push(p.line);
+      else if (p.name === "ATTENDEE") {
+        const m = /^mailto:(.+)$/i.exec(p.value.trim());
+        if (m && owners.has(m[1].trim().toLowerCase())) out.push(p.line);
+      }
+    }
+    out.push("END:VEVENT");
+  }
+  out.push("END:VCALENDAR");
+  return { text: out.join("\r\n") + "\r\n", kept: kept.length, total: cal.events.length };
+}
+
+// ---------- ZIP ----------
+async function inflateRaw(u8) {
+  const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function readZip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let i = buf.byteLength - 22;
+  while (i >= 0 && dv.getUint32(i, true) !== 0x06054b50) i--;
+  if (i < 0) throw new Error("Bukan file zip yang valid");
+  const n = dv.getUint16(i + 10, true);
+  let p = dv.getUint32(i + 16, true);
+  const dec = new TextDecoder(), out = [];
+  for (let k = 0; k < n; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error("Struktur zip tidak dikenali");
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + elen + clen;
+    if (name.endsWith("/")) continue;
+    const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+    const raw = u8.subarray(start, start + csize);
+    if (method === 0) out.push({ name, data: raw });
+    else if (method === 8) out.push({ name, data: await inflateRaw(raw) });
+    else throw new Error("Metode kompresi zip tidak didukung: " + method);
+  }
+  return out;
+}
+
+const CRC_T = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) { let c = ~0; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (~c) >>> 0; }
+
+function makeZip(files) {
+  const enc = new TextEncoder(), locals = [], centrals = [];
+  let off = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true); lh.setUint16(26, name.length, true);
+    locals.push(new Uint8Array(lh.buffer), name, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, off, true);
+    centrals.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + size;
+  }
+  const csize = centrals.reduce((a, b) => a + b.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, csize, true); end.setUint32(16, off, true);
+  const parts = [...locals, ...centrals, new Uint8Array(end.buffer)];
+  const total = parts.reduce((a, b) => a + b.length, 0), out = new Uint8Array(total);
+  let q = 0;
+  for (const x of parts) { out.set(x, q); q += x.length; }
+  return out;
+}
+
+// files: [{name, arrayBuffer()}]; mulai/selesai: "YYYY-MM-DD"
+async function proses(files, mulai, selesai, emails) {
+  const lo = ms(mulai.replace(/-/g, "")) - 3 * DAY;
+  const hi = ms(selesai.replace(/-/g, "")) + 4 * DAY;
+  if (!(hi > lo + 3 * DAY)) throw new Error("Rentang tanggal tidak valid");
+  const owners = new Set(String(emails || "").split(/[,;\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean));
+  const dec = new TextDecoder(), sources = [];
+  for (const f of files) {
+    const buf = await f.arrayBuffer();
+    if (/\.zip$/i.test(f.name)) {
+      for (const e of await readZip(buf)) if (/\.ics$/i.test(e.name)) sources.push({ label: e.name.split("/").pop(), text: dec.decode(e.data) });
+    } else sources.push({ label: f.name, text: dec.decode(buf) });
+  }
+  const enc = new TextEncoder(), outFiles = [], laporan = [], dipakai = new Set();
+  for (const s of sources) {
+    for (const cal of parseCalendars(s.text)) {
+      const ow = new Set(owners);
+      if (cal.name.includes("@")) ow.add(cal.name.toLowerCase().trim());
+      const r = emitCalendar(cal, lo, hi, ow);
+      const nama = cal.name || s.label.replace(/\.ics$/i, "");
+      laporan.push({ kalender: nama, dipilih: r.kept, total: r.total });
+      if (!r.kept) continue;
+      let fn = nama.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80) || "kalender", n = 1, uniq = fn;
+      while (dipakai.has(uniq)) uniq = fn + "-" + (++n);
+      dipakai.add(uniq);
+      outFiles.push({ name: uniq + ".ics", data: enc.encode(r.text) });
+    }
+  }
+  if (!outFiles.length) throw new Error("Tidak ada agenda pada rentang tanggal tersebut");
+  return { zip: makeZip(outFiles), laporan, ukuran: outFiles.reduce((a, f) => a + f.data.length, 0) };
+}
+// ==== CORE-END
+
+const $ = id => document.getElementById(id);
+function cekSiap() { $("tombol").disabled = !($("berkas").files.length && $("mulai").value && $("selesai").value); }
+["berkas", "mulai", "selesai"].forEach(id => $(id).addEventListener("input", cekSiap));
+$("tombol").addEventListener("click", async () => {
+  const box = $("hasil");
+  box.textContent = "Memproses…";
+  $("tombol").disabled = true;
+  try {
+    if ($("selesai").value < $("mulai").value) throw new Error("Tanggal selesai lebih awal dari tanggal mulai");
+    const r = await proses(Array.from($("berkas").files), $("mulai").value, $("selesai").value, $("email").value);
+    const url = URL.createObjectURL(new Blob([r.zip], { type: "application/zip" }));
+    const nama = `kalender-ringkas_${$("mulai").value}_${$("selesai").value}.zip`;
+    const kb = Math.max(1, Math.round(r.ukuran / 1024));
+    box.innerHTML = "<strong>Selesai.</strong> Lampirkan file zip ini ke Claude (jangan diekstrak). Ukuran isi sekitar " + kb + " KB." +
+      "<table><tr><th>Kalender</th><th>Agenda dipilih</th><th>Total di file</th></tr>" +
+      r.laporan.map(x => "<tr><td></td><td>" + x.dipilih + "</td><td>" + x.total + "</td></tr>").join("") + "</table>" +
+      '<a class="unduh" download="' + nama + '" href="' + url + '">Unduh ' + nama + "</a>";
+    box.querySelectorAll("tr").forEach((tr, i) => { if (i > 0) tr.firstChild.textContent = r.laporan[i - 1].kalender; });
+  } catch (e) {
+    box.innerHTML = '<span class="err"></span>';
+    box.firstChild.textContent = "Gagal: " + e.message;
+  }
+  cekSiap();
+});
+</script>
+</body>
+</html>

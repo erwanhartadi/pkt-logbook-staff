@@ -27,6 +27,7 @@ Gaya respons: ringkas dan langsung. Bahasa Indonesia.
 Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics` atau `.zip` hasil ekspor kalender, atau permintaan eksplisit "akses kalender saya" (Google Calendar, lihat 3b).
 - Ambil nama dan tanggal dari argumen (dipisah `;`). Ubah tanggal ke format `YYYY-MM-DD`.
 - Ekspor Google Calendar selalu berisi **semua kalender dan seluruh riwayat** (file `.zip` berisi banyak `.ics`) dan tidak bisa dibatasi rentang tanggal. Itu tidak masalah: skrip hanya mengambil agenda di dalam rentang. Terima `.zip` apa adanya; jangan minta staf mengekstrak atau memotongnya. Beberapa `.ics` terpisah juga boleh.
+- `.ics` mentah yang dilampirkan langsung berupa teks dan bisa membanjiri chat (galat "exceeds context limit") atau terbaca sebagian. Jika staf mengalaminya, sarankan melampirkan sebagai `.zip` (kompres file `.ics`, atau pakai Pemotong Kalender di repo). Jika isi `.ics` sempat tampil di percakapan, tetap proses lewat skrip dari berkas; jangan meringkas dari teks yang tampak.
 - Jika email kalender tidak terbaca otomatis, tanyakan email kalendernya untuk mendeteksi agenda yang ditolak (opsional).
 - Jika ICS belum ada: jelaskan singkat cara ekspor ICS (Google Calendar: Setelan > Impor & ekspor > Ekspor, ekstrak zip, lampirkan file .ics), atau terima screenshot kalender / daftar kegiatan yang diketik staf. Jangan berhenti.
 - Jika TTD belum ada: minta dilampirkan. Jangan membuat logbook tanpa TTD kecuali staf menyatakan akan menandatangani manual (pakai gambar kosong putih).

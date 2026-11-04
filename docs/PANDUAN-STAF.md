@@ -4,16 +4,24 @@
 1. Buka Claude kantor dan mulai **Incognito chat** (ikon hantu di pojok atas). Chat tidak masuk riwayat atau memori.
 2. Siapkan dua berkas:
    - **Tanda tangan**: foto atau scan di atas kertas putih (PNG/JPG).
-   - **Kalender**: file .zip/.ics hasil ekspor, lihat langkah di bawah.
+   - **Kalender**: zip hasil ekspor atau zip dari Pemotong Kalender, lihat langkah di bawah.
 
 ## Ekspor kalender (Google Calendar, lewat komputer)
 1. Buka calendar.google.com, klik ikon roda gigi > **Setelan**.
-2. Pilih **Impor & ekspor** > **Ekspor**. File **.zip** terunduh.
-3. Ini normal: isinya **semua kalender dan seluruh riwayat** Anda, dan tidak bisa dibatasi rentang tanggal. **Tidak perlu diekstrak atau dipotong**, lampirkan zip-nya. Claude hanya mengambil agenda pada rentang yang Anda minta, dan akan bertanya kalender mana yang dipakai (biasanya kalender kerja).
+2. Pilih **Impor & ekspor** > **Ekspor**. File **.zip** terunduh. Isinya semua kalender dan seluruh riwayat Anda (tidak bisa dibatasi rentang tanggal).
 
-Tidak nyaman mengunggah seluruh kalender? Pilihan lain:
-- Ekspor satu kalender saja: Setelan > klik nama kalender di kiri > **Ekspor kalender** (tetap seluruh riwayat kalender itu).
-- Kirim screenshot kalender untuk rentang yang diminta, atau ketik daftar kegiatan per tanggal.
+**Jangan melampirkan file `.ics` hasil ekstrak.** File `.ics` berupa teks, sehingga isinya langsung masuk ke chat dan bisa melebihi batas (muncul pesan *"This request exceeds Claude's context limit"*). Dua cara aman:
+
+**Cara A (tercepat): lampirkan zip-nya apa adanya**, tanpa diekstrak. Sudah punya `.ics` saja? Kompres dulu: Mac klik kanan > **Compress**; Windows klik kanan > **Send to** > **Compressed (zipped) folder**.
+
+**Cara B (disarankan, lebih ringan dan privat): Pemotong Kalender.**
+1. Unduh `dist/pemotong-kalender.html` dari repo (buka berkasnya di GitHub, klik **Download raw file**), lalu buka dengan klik dua kali di Chrome, Edge, atau Safari terbaru.
+2. Pilih zip ekspor, isi rentang tanggal logbook, klik **Potong kalender**.
+3. Unduh `kalender-ringkas_...zip` dan lampirkan itu ke Claude.
+
+Pemotong berjalan di browser Anda; kalender tidak diunggah ke mana pun. Hasilnya hanya berisi agenda pada rentang itu (judul dan waktu), tanpa riwayat lama, deskripsi, lokasi, atau peserta lain. Ukurannya biasanya beberapa KB.
+
+Tidak ingin memakai keduanya? Kirim screenshot kalender untuk rentang yang diminta, atau ketik daftar kegiatan per tanggal.
 
 ## Alternatif tanpa ekspor: Google Calendar tersambung (akun pribadi)
 Jika Google Calendar Anda sudah tersambung ke Claude (menu Connectors/Integrations), Anda bisa melewati ekspor. Tambahkan `akses kalender saya` pada perintah:
@@ -23,7 +31,7 @@ Jika Google Calendar Anda sudah tersambung ke Claude (menu Connectors/Integratio
 Claude akan menyebutkan akun kalender yang tersambung dan meminta konfirmasi, lalu hanya membaca rentang tanggal yang diminta. **Jangan memakai cara ini di akun bersama**: kalender yang tersambung milik akun bersama, bukan milik Anda.
 
 ## Meminta logbook
-Ketik di chat dan lampirkan TTD serta file `.ics`:
+Ketik di chat dan lampirkan TTD serta zip kalender:
 
 `/logbook-pkt-staff Nama Lengkap Anda; 1 November 2026 - 30 November 2026`
 
