@@ -24,9 +24,10 @@ Gaya respons: ringkas dan langsung. Bahasa Indonesia.
 ## Alur
 
 ### 1. Cek masukan (satu pesan, hanya yang kurang)
-Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics`.
+Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.ics` atau `.zip` hasil ekspor kalender.
 - Ambil nama dan tanggal dari argumen (dipisah `;`). Ubah tanggal ke format `YYYY-MM-DD`.
-- Staf boleh melampirkan beberapa `.ics` (mis. kalender pribadi dan kalender kerja). Jika email kalender tidak terbaca otomatis, tanyakan email kalendernya untuk mendeteksi agenda yang ditolak (opsional).
+- Ekspor Google Calendar selalu berisi **semua kalender dan seluruh riwayat** (file `.zip` berisi banyak `.ics`) dan tidak bisa dibatasi rentang tanggal. Itu tidak masalah: skrip hanya mengambil agenda di dalam rentang. Terima `.zip` apa adanya; jangan minta staf mengekstrak atau memotongnya. Beberapa `.ics` terpisah juga boleh.
+- Jika email kalender tidak terbaca otomatis, tanyakan email kalendernya untuk mendeteksi agenda yang ditolak (opsional).
 - Jika ICS belum ada: jelaskan singkat cara ekspor ICS (Google Calendar: Setelan > Impor & ekspor > Ekspor, ekstrak zip, lampirkan file .ics), atau terima screenshot kalender / daftar kegiatan yang diketik staf. Jangan berhenti.
 - Jika TTD belum ada: minta dilampirkan. Jangan membuat logbook tanpa TTD kecuali staf menyatakan akan menandatangani manual (pakai gambar kosong putih).
 
@@ -38,9 +39,11 @@ Perlu: nama lengkap, tanggal mulai dan selesai, gambar TTD, minimal satu file `.
 ### 3. Baca ICS
 ```bash
 pip install -q -r <folder-skill>/scripts/requirements.txt   # jika belum ada
-python <folder-skill>/scripts/ics_events.py --start <mulai> --end <selesai> --ics <file1.ics> [file2.ics ...] [--email <email-kalender>] --out events.json
+python <folder-skill>/scripts/ics_events.py --start <mulai> --end <selesai> --ics <file.zip | file1.ics ...> [--email <email-kalender>] [--pakai <teks nama kalender> ...] --out events.json
 ```
 `events.json` berisi: `kandidat` (dengan `id` dan `catatan`), `dikecualikan` (dengan `alasan`: ditolak, dibatalkan, acara sehari penuh), `cuti_pribadi_kandidat`, `libur_kandidat_dari_ics`, `duplikat_digabung`, `di_luar_rentang`, `peringatan_baca`. Semua waktu sudah dalam WIB.
+
+Periksa `kalender` di output (tiap kalender beserta `agenda_di_rentang`). Jika lebih dari satu kalender punya agenda, tanyakan ke staf dalam satu pertanyaan kalender mana yang dipakai untuk logbook (biasanya kalender kerja; kalender pribadi, ulang tahun, atau hari libur biasanya tidak), lalu jalankan ulang dengan `--pakai <potongan nama kalender atau berkas>`. Jangan menampilkan judul agenda dari kalender yang tidak dipilih atau dari luar rentang.
 
 ### 4. Cuti pribadi (kuning)
 Tampilkan `cuti_pribadi_kandidat` ke staf dan minta konfirmasi dalam satu pertanyaan. Hanya tanggal yang dikonfirmasi yang dimasukkan ke `cuti_pribadi`. Kegiatan di hari cuti tetap ditulis bila ada.
@@ -77,7 +80,7 @@ Hari kerja tanpa agenda tidak dimasukkan (baris dibiarkan kosong untuk diisi man
 ### 7. Bangun xlsx dan hapus berkas sensitif
 ```bash
 python <folder-skill>/scripts/build.py --start <mulai> --end <selesai> --agenda agenda.json \
-  --ttd <file-ttd> --events events.json --hapus <file1.ics> [file2.ics ...] --out <folder-output>
+  --ttd <file-ttd> --events events.json --hapus <file.zip | file1.ics ...> --out <folder-output>
 ```
 Skrip mengisi template (merah untuk akhir pekan/libur tanpa TTD, kuning untuk cuti dengan TTD, TTD di hari kerja), menambah baris bila rentang > 26 hari, membuat laporan JSON, lalu **menghapus TTD dan ICS** dari workspace. Nama berkas: `Logbook_<Nama>_<Periode>.xlsx`.
 Jika `gagal_dihapus` tidak kosong, sebutkan berkas mana.

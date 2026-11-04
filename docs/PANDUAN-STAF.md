@@ -4,15 +4,16 @@
 1. Buka Claude kantor dan mulai **Incognito chat** (ikon hantu di pojok atas). Chat tidak masuk riwayat atau memori.
 2. Siapkan dua berkas:
    - **Tanda tangan**: foto atau scan di atas kertas putih (PNG/JPG).
-   - **Kalender (.ics)**: lihat langkah di bawah.
+   - **Kalender**: file .zip/.ics hasil ekspor, lihat langkah di bawah.
 
 ## Ekspor kalender (Google Calendar, lewat komputer)
 1. Buka calendar.google.com, klik ikon roda gigi > **Setelan**.
-2. Pilih **Impor & ekspor** > **Ekspor**. File zip terunduh; ekstrak (klik kanan > Extract).
-3. Di dalamnya ada satu file `.ics` per kalender. Lampirkan yang berisi kegiatan kerja Anda (boleh lebih dari satu).
-4. Opsional, hanya satu kalender: Setelan > klik nama kalender di kiri > **Ekspor kalender**.
+2. Pilih **Impor & ekspor** > **Ekspor**. File **.zip** terunduh.
+3. Ini normal: isinya **semua kalender dan seluruh riwayat** Anda, dan tidak bisa dibatasi rentang tanggal. **Tidak perlu diekstrak atau dipotong**, lampirkan zip-nya. Claude hanya mengambil agenda pada rentang yang Anda minta, dan akan bertanya kalender mana yang dipakai (biasanya kalender kerja).
 
-Tidak punya Google Calendar? Kirim screenshot kalender, atau ketik daftar kegiatan per tanggal.
+Tidak nyaman mengunggah seluruh kalender? Pilihan lain:
+- Ekspor satu kalender saja: Setelan > klik nama kalender di kiri > **Ekspor kalender** (tetap seluruh riwayat kalender itu).
+- Kirim screenshot kalender untuk rentang yang diminta, atau ketik daftar kegiatan per tanggal.
 
 ## Meminta logbook
 Ketik di chat dan lampirkan TTD serta file `.ics`:

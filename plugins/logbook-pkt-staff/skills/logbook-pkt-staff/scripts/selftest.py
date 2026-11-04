@@ -8,6 +8,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -155,6 +156,47 @@ def check(cond, msg):
         sys.exit(f"GAGAL: {msg}")
 
 
+def test_zip():
+    """Ekspor Google Calendar = zip berisi banyak .ics + seluruh riwayat."""
+    pribadi = """BEGIN:VCALENDAR
+VERSION:2.0
+X-WR-CALNAME:Pribadi
+BEGIN:VEVENT
+UID:p1
+SUMMARY:Olahraga pagi
+DTSTART;TZID=Asia/Jakarta:20200101T060000
+DTEND;TZID=Asia/Jakarta:20200101T070000
+RRULE:FREQ=DAILY
+END:VEVENT
+BEGIN:VEVENT
+UID:p2
+SUMMARY:Acara tahun lalu
+DTSTART;TZID=Asia/Jakarta:20231005T090000
+DTEND;TZID=Asia/Jakarta:20231005T100000
+END:VEVENT
+END:VCALENDAR
+"""
+    with tempfile.TemporaryDirectory() as t:
+        t = Path(t)
+        z = t / "calendar-export.zip"
+        with zipfile.ZipFile(z, "w") as zf:
+            zf.writestr(f"{OWNER}.ics", MAIN_ICS)
+            zf.writestr("Pribadi.ics", pribadi)
+            zf.writestr("catatan.txt", "bukan kalender")
+        out = t / "ev.json"
+        res = run(HERE / "ics_events.py", "--start", "2026-11-02", "--end", "2026-11-06", "--ics", z, "--out", out)
+        check(len(res["kalender"]) == 2, f"zip: jumlah kalender salah: {res['kalender']}")
+        ev = json.loads(out.read_text(encoding="utf-8"))
+        check(sum(k["judul"] == "Olahraga pagi" for k in ev["kandidat"]) == 5, "zip: jadwal harian sejak 2020 salah")
+        check(not any(k["judul"] == "Acara tahun lalu" for k in ev["kandidat"]), "zip: agenda lama ikut masuk")
+        out2 = t / "ev2.json"
+        res2 = run(HERE / "ics_events.py", "--start", "2026-11-02", "--end", "2026-11-06", "--ics", z,
+                   "--pakai", "staf.contoh", "--out", out2)
+        ev2 = json.loads(out2.read_text(encoding="utf-8"))
+        check(not any(k["judul"] == "Olahraga pagi" for k in ev2["kandidat"]), "zip: --pakai tidak menyaring kalender")
+        check([k["dipakai"] for k in res2["kalender"]].count(False) == 1, "zip: status dipakai salah")
+
+
 def main():
     with tempfile.TemporaryDirectory() as t:
         t = Path(t)
@@ -229,6 +271,7 @@ def main():
         check(ws["C" + str(6 + 3)].fill.fgColor.rgb == "FFFFFF00", "kuning cuti pribadi salah")  # 5 Nov
         check(len(ws._images) == hari_kerja_bertanda, f"jumlah TTD {len(ws._images)} != {hari_kerja_bertanda}")
         check(wb.properties.creator == "Logbook PKT", "metadata creator tidak bersih")
+    test_zip()
     print("OK")
 
 

@@ -53,3 +53,8 @@ Varian skill `logbook-pkt` yang bisa dipakai staf lain di PKT (Center for Tropic
 ## Belum diputuskan / lanjutan
 - Konfirmasi ketentuan penggunaan Anthropic untuk akun bersama (jika tidak diperbolehkan, alternatif: paket Team dengan seat per staf).
 - Versi Docs/PDF dari panduan staf (saat ini Markdown).
+
+## Temuan uji nyata (4 Nov 2026)
+- Ekspor Google Calendar mengunduh **semua kalender dan seluruh riwayat** (zip berisi banyak .ics); tidak bisa dibatasi rentang tanggal.
+- Solusi: `ics_events.py` menerima `.zip`, menyaring per rentang, melaporkan ringkasan per kalender, dan `--pakai` memilih kalender. SKILL.md meminta staf memilih kalender bila lebih dari satu punya agenda.
+- Skill berlaku di akun Free (dengan code execution); belum diuji di akun Free sungguhan.

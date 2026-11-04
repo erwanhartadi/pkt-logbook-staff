@@ -6,7 +6,7 @@ Skill Claude untuk menyusun **logbook harian staf PKT UGM** (.xlsx) dari file ka
 - Tidak ada data pribadi di repo ini. Jangan pernah meng-commit file `.ics`, tanda tangan, atau logbook terisi (sudah dicegah `.gitignore`).
 
 ## Cara pakai (ringkas)
-1. Ekspor kalender Anda ke `.ics` ([panduan](docs/PANDUAN-STAF.md)).
+1. Ekspor kalender Anda ([panduan](docs/PANDUAN-STAF.md)). File `.zip` dari Google Calendar boleh langsung dilampirkan; tidak perlu dipotong per tanggal.
 2. Buka **Incognito chat** di Claude.
 3. Ketik dan lampirkan TTD (gambar) serta file `.ics`:
 
@@ -16,7 +16,7 @@ Skill Claude untuk menyusun **logbook harian staf PKT UGM** (.xlsx) dari file ka
 ## Pemasangan
 
 ### Opsi A: Claude (web/desktop/mobile), akun pribadi
-Skill harus diaktifkan di akun Anda, dan fitur *code execution* harus menyala.
+Skill tersedia di semua paket, termasuk Free ([sumber](https://support.claude.com/en/articles/12512180-use-skills-in-claude)). Syaratnya fitur *Code execution and file creation* menyala (Settings > Capabilities).
 
 1. Unduh [`dist/logbook-pkt-staff.zip`](dist/logbook-pkt-staff.zip) (di GitHub: buka berkasnya, klik **Download raw file**). Jangan diekstrak.
 2. Buka Claude > **Settings** > **Capabilities** > **Skills** > **Upload skill**, pilih zip tersebut.
@@ -36,6 +36,10 @@ Skill dipanggil dengan `/logbook-pkt-staff:logbook-pkt-staff Nama; rentang tangg
 git clone https://github.com/erwanhartadi/pkt-logbook-staff.git
 cp -r pkt-logbook-staff/plugins/logbook-pkt-staff/skills/logbook-pkt-staff ~/.claude/skills/
 ```
+
+## Catatan akun Free
+- Batas pemakaian lebih kecil. Jika kuota habis di tengah proses, coba per dua minggu.
+- Pencarian web mungkin tidak tersedia; siapkan daftar libur nasional bulan itu agar bisa diketik ke Claude.
 
 ## Kebutuhan
 Python 3 dengan `openpyxl`, `pillow`, dan `python-dateutil` (biasanya sudah tersedia di lingkungan code execution Claude; jika belum, skill akan memasangnya lewat `pip`).

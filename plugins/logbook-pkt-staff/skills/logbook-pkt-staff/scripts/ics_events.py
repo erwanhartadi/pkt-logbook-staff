@@ -12,6 +12,7 @@ import argparse
 import json
 import re
 import sys
+import zipfile
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -119,8 +120,7 @@ def parse_duration(v):
     return timedelta(weeks=w, days=d, hours=h, minutes=mi, seconds=s)
 
 
-def read_ics(path, extra_emails, warns):
-    text = Path(path).read_text(encoding="utf-8", errors="replace")
+def read_ics(text, extra_emails, warns):
     calname, events, cur = "", [], None
     for line in unfold(text):
         if line.upper() == "BEGIN:VEVENT":
@@ -212,6 +212,26 @@ def occurrences(ev, lo, hi, warns):
     return [o.date() if is_date(s) else o for o in got]
 
 
+MAX_ZIP_MEMBER = 200 * 1024 * 1024
+
+
+def iter_sources(paths, warns):
+    """Hasilkan (label, teks) tiap .ics. File .zip dibuka dan semua .ics di dalamnya dibaca."""
+    for p in paths:
+        pp = Path(p)
+        if pp.suffix.lower() == ".zip":
+            with zipfile.ZipFile(pp) as z:
+                for info in z.infolist():
+                    if info.is_dir() or not info.filename.lower().endswith(".ics"):
+                        continue
+                    if info.file_size > MAX_ZIP_MEMBER:
+                        warns.add(f"{info.filename}: terlalu besar, dilewati")
+                        continue
+                    yield info.filename.split("/")[-1], z.read(info).decode("utf-8", errors="replace")
+        else:
+            yield pp.name, pp.read_text(encoding="utf-8", errors="replace")
+
+
 def normalisasi(t):
     return re.sub(r"\s+", " ", t.strip().lower())
 
@@ -220,8 +240,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--start", required=True)
     ap.add_argument("--end", required=True)
-    ap.add_argument("--ics", nargs="+", required=True)
+    ap.add_argument("--ics", nargs="+", required=True, help="file .ics dan/atau .zip hasil ekspor")
     ap.add_argument("--email", nargs="*", default=[])
+    ap.add_argument("--pakai", nargs="*", default=[],
+                    help="hanya pakai kalender yang namanya/berkasnya mengandung salah satu teks ini")
     ap.add_argument("--out", default="events.json")
     a = ap.parse_args()
     start, end = date.fromisoformat(a.start), date.fromisoformat(a.end)
@@ -234,11 +256,16 @@ def main():
     mentah, di_luar = [], 0
     libur_kand, cuti_bersama_kand, cuti_kand = {}, {}, {}
 
-    for path in a.ics:
-        calname, owners, events = read_ics(path, a.email, warns)
+    kalender = []
+    for label, teks in iter_sources(a.ics, warns):
+        calname, owners, events = read_ics(teks, a.email, warns)
+        if a.pakai and not any(n.lower() in f"{calname} {label}".lower() for n in a.pakai):
+            kalender.append({"berkas": label, "nama_kalender": calname, "dipakai": False})
+            continue
+        n0 = len(mentah) + len(libur_kand) + len(cuti_bersama_kand) + len(cuti_kand)
         pemilik |= owners
         if not owners:
-            warns.add(f"{Path(path).name}: email pemilik tidak diketahui; status 'tolak' tidak bisa dicek")
+            warns.add(f"{label}: email pemilik tidak diketahui; status 'tolak' tidak bisa dicek")
         is_holiday_cal = bool(KAL_LIBUR.search(calname))
         overrides = {(e.get("uid"), key_of(e["recurrence_id"]))
                      for e in events if e.get("recurrence_id") is not None and e.get("dtstart") is not None}
@@ -308,6 +335,8 @@ def main():
                     if normalisasi(judul) in AMBIGU or len(judul) < 4:
                         rec["flags"].append("judul ambigu")
                 mentah.append(rec)
+        n1 = len(mentah) + len(libur_kand) + len(cuti_bersama_kand) + len(cuti_kand)
+        kalender.append({"berkas": label, "nama_kalender": calname, "agenda_di_rentang": n1 - n0, "dipakai": True})
 
     # gabung duplikat (kalender berbeda, waktu dan judul sama)
     kandidat, dikecualikan, dedup, dup_count = [], [], {}, 0
@@ -348,6 +377,7 @@ def main():
 
     hasil = {
         "rentang": {"mulai": start.isoformat(), "selesai": end.isoformat(), "zona_waktu": "Asia/Jakarta"},
+        "kalender": kalender,
         "pemilik_terdeteksi": sorted(pemilik),
         "peringatan_baca": sorted(warns),
         "kandidat": [out_rec(r, i + 1) for i, r in enumerate(kandidat)],
@@ -359,7 +389,7 @@ def main():
         "di_luar_rentang": di_luar,
     }
     Path(a.out).write_text(json.dumps(hasil, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"out": a.out, "kandidat": len(kandidat), "dikecualikan": len(dikecualikan),
+    print(json.dumps({"out": a.out, "kalender": kalender, "kandidat": len(kandidat), "dikecualikan": len(dikecualikan),
                       "cuti_pribadi_kandidat": len(cuti_kand), "libur_kandidat": len(libur_kand) + len(cuti_bersama_kand),
                       "duplikat_digabung": dup_count, "di_luar_rentang": di_luar,
                       "peringatan_baca": sorted(warns)}, ensure_ascii=False, indent=2))
